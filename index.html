@@ -194,7 +194,7 @@
     .type-head { flex-wrap: wrap; gap: 8px; }
     .type-head button { padding: .5em .7em; }
     .type-head h2 { order: 1; flex-basis: 100%; }
-    .type-head #pause { margin-left: auto; }
+    .type-head #restart { margin-left: auto; }
   }
 </style>
 </head>
@@ -261,7 +261,7 @@
     <button id="sample" type="button">mintafeladat</button>
     <div id="load-error" class="error-msg" role="alert"></div>
   </div>
-  <p id="version" class="version muted">v12</p>
+  <p id="version" class="version muted">v13</p>
 </section>
 
 <!-- 2. Feladatválasztó -->
@@ -283,6 +283,7 @@
     <button id="back" type="button" title="Vissza a listához">← Lista</button>
     <span id="task-num" class="num"></span>
     <h2 id="task-title"></h2>
+    <button id="restart" type="button" title="A feladat újrakezdése elölről, nullázott órával">Újrakezdés</button>
     <button id="pause" type="button" title="Szünet (az idő megáll)">Szünet</button>
     <button id="stop" type="button" title="Befejezés, ugrás az eredményre">Befejezés</button>
   </div>
@@ -819,6 +820,7 @@ function togglePause() {
 }
 
 $('pause').addEventListener('click', togglePause);
+$('restart').addEventListener('click', () => { if (currentId) startTask(currentId); });
 $('stop').addEventListener('click', () => { if (st && !st.endTime) finish(); });
 
 input.addEventListener('input', onInput);
