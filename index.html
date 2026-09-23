@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>typeUp – gépelésgyakorló</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --card: #ffffff;
+    --text: #2b2723;
+    --muted: #8a847c;
+    --line: #e6e1d8;
+    --accent: #3a8f89;
+    --accent-soft: #e3f1ef;
+    --error: #d4453b;
+    --error-soft: #fbe1de;
+    --radius: 14px;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+  }
+  button {
+    font: inherit;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--text);
+    border-radius: 10px;
+    padding: .5em 1em;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .45; cursor: default; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover:not(:disabled) { filter: brightness(1.08); }
+  button:focus-visible, input:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+
+  .view { display: none; max-width: 900px; margin: 0 auto; padding: 32px 16px 48px; }
+  .view.active { display: block; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
+  h1, h2 { margin: 0; font-weight: 650; letter-spacing: -.01em; }
+  h1 { font-size: 1.9rem; }
+  h2 { font-size: 1.25rem; }
+  .muted { color: var(--muted); }
+
+  /* Betöltés */
+  #view-load { text-align: center; padding-top: 8vh; }
+  #view-load .otter-slot { width: 150px; margin: 0 auto 8px; }
+  #view-load p.lead { margin: 6px 0 28px; }
+  #drop {
+    border: 2px dashed var(--line);
+    border-radius: var(--radius);
+    background: var(--card);
+    padding: 40px 20px;
+    transition: border-color .15s, background .15s;
+  }
+  #drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  #drop p { margin: 0 0 16px; }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .error-msg { color: var(--error); margin-top: 16px; min-height: 1.5em; }
+
+  /* Feladatválasztó */
+  .list-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .list-head .grow { flex: 1; min-width: 0; }
+  .list-head .file-name { font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #search {
+    width: 100%; font: inherit; padding: .65em 1em; margin-bottom: 16px;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text);
+  }
+  #tree { padding: 12px 8px; }
+  #tree .children { margin-left: 18px; border-left: 1px solid var(--line); padding-left: 6px; }
+  #tree summary, #tree .task {
+    display: flex; align-items: baseline; gap: 10px;
+    padding: 5px 10px; border-radius: 8px; cursor: pointer;
+  }
+  #tree summary { list-style: none; font-weight: 550; }
+  #tree summary::-webkit-details-marker { display: none; }
+  #tree summary::before {
+    content: "▸"; color: var(--muted); width: 1em; flex: none; transition: transform .15s;
+    display: inline-block; text-align: center;
+  }
+  #tree details[open] > summary::before { transform: rotate(90deg); }
+  #tree summary:hover, #tree .task:hover:not(:disabled) { background: var(--bg); }
+  #tree .task {
+    width: 100%; border: none; background: none; text-align: left; font: inherit;
+    padding-left: calc(10px + 1em + 10px);
+  }
+  #tree .task.last { background: var(--accent-soft); }
+  #tree .num { font-family: var(--mono); font-size: .85em; color: var(--muted); flex: none; }
+  #tree .title { flex: 1; min-width: 0; }
+  #tree .meta { font-size: .8em; color: var(--muted); flex: none; }
+  #tree mark { background: var(--accent-soft); color: inherit; border-radius: 3px; }
+  #tree .empty { padding: 12px; }
+
+  /* Gépelés */
+  .type-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .type-head .num { font-family: var(--mono); color: var(--muted); }
+  .type-head h2 { flex: 1; min-width: 0; }
+  .stats { display: flex; align-items: center; gap: 20px; margin-bottom: 14px; flex-wrap: wrap; }
+  .stat { font-variant-numeric: tabular-nums; }
+  .stat b { font-weight: 650; }
+  .stat.err b { color: var(--error); }
+  .progress { flex: 1; min-width: 120px; height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+  .progress > div { height: 100%; width: 0; background: var(--accent); transition: width .15s; }
+  .type-card { position: relative; padding-bottom: 28px; }
+  #pattern {
+    position: relative;
+    font-family: var(--mono); font-size: 1.05rem; line-height: 1.75;
+    white-space: pre-wrap; word-break: break-word;
+    max-height: 42vh; overflow-y: auto;
+    padding: 4px 6px; margin-bottom: 18px;
+    cursor: text;
+  }
+  #pattern span { border-radius: 2px; }
+  #pattern .done { color: var(--muted); }
+  #pattern .wrong { color: var(--error); background: var(--error-soft); }
+  #pattern .current { background: var(--accent-soft); box-shadow: inset 0 -2px 0 var(--accent); animation: caret 1.1s steps(1) infinite; }
+  @keyframes caret { 50% { box-shadow: inset 0 -2px 0 transparent; } }
+  #pattern .nl { color: #c9c3b8; }
+  #pattern .nl.done { color: #dcd7ce; }
+  #pattern .nl.wrong { color: var(--error); }
+  #input {
+    display: block; width: 100%; min-height: 9em; resize: vertical;
+    font-family: var(--mono); font-size: 1.05rem; line-height: 1.75;
+    padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--bg); color: var(--text);
+  }
+  #input:focus { outline: none; border-color: var(--accent); background: var(--card); }
+  .type-card .otter-slot { position: absolute; right: -18px; bottom: -34px; width: 84px; pointer-events: none; }
+
+  /* Eredmény */
+  #view-result .card { text-align: center; }
+  #view-result .otter-slot { width: 140px; margin: 40px auto 8px; }
+  #view-result .res-title { margin-bottom: 4px; }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 24px 0; }
+  .metric { background: var(--bg); border-radius: 12px; padding: 14px; }
+  .metric .v { font-size: 1.6rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .metric .l { font-size: .85rem; color: var(--muted); }
+  .missed { margin: 0 0 24px; }
+  .missed ul { list-style: none; padding: 0; margin: 10px 0 0; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .missed li { background: var(--error-soft); border-radius: 8px; padding: 4px 10px; }
+  .missed .ch { font-family: var(--mono); font-weight: 650; }
+  .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+  /* Vidra */
+  .otter { display: block; width: 100%; height: auto; overflow: visible; }
+  .otter * { transform-box: fill-box; transform-origin: center; }
+  .otter .o-all { transform-box: view-box; transform-origin: 60px 70px; }
+  .otter .o-brows, .otter .o-gasp, .otter .o-raised, .otter .o-happy { display: none; }
+  .otter .o-look { transition: transform .25s; }
+  .otter.idle .o-eyes, .otter.wave .o-eyes, .otter.typing .o-eyes { animation: blink 4.2s infinite; }
+  @keyframes blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
+  .otter.typing .o-look { transform: translateY(3px); }
+  .otter.wave .o-paw-r { display: none; }
+  .otter.wave .o-raised { display: inline; animation: wave 1.4s ease-in-out infinite; transform-box: view-box; transform-origin: 84px 86px; }
+  @keyframes wave { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(22deg); } }
+  .otter.oops .o-all { animation: shake .45s; }
+  .otter.oops .o-eyes { transform: scale(1.4); animation: none; }
+  .otter.oops .o-brows, .otter.oops .o-gasp { display: inline; }
+  .otter.oops .o-smile { display: none; }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-4px); } 40% { transform: translateX(4px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+  .otter.flip .o-all { animation: flip 1.2s cubic-bezier(.3, .1, .3, 1) 1; }
+  .otter.flip .o-eyes { display: none; }
+  .otter.flip .o-happy { display: inline; }
+  @keyframes flip {
+    0% { transform: translateY(0) rotate(0) scaleY(1); }
+    15% { transform: translateY(6px) rotate(0) scaleY(.9); }
+    50% { transform: translateY(-70px) rotate(-180deg) scaleY(1); }
+    82% { transform: translateY(-8px) rotate(-345deg); }
+    90% { transform: translateY(4px) rotate(-360deg) scaleY(.92); }
+    100% { transform: translateY(0) rotate(-360deg) scaleY(1); }
+  }
+
+  @media (max-width: 560px) {
+    .view { padding-top: 20px; }
+    .card { padding: 16px; }
+    h1 { font-size: 1.5rem; }
+    .type-card .otter-slot { width: 64px; right: -8px; }
+  }
+</style>
+</head>
+<body>
+
+<template id="otter-tpl">
+  <svg class="otter idle" viewBox="0 0 120 120" aria-hidden="true">
+    <g class="o-all">
+      <path d="M84 104 Q114 100 116 76 Q106 94 82 94 Z" fill="#6f4a2f"/>
+      <ellipse cx="60" cy="92" rx="30" ry="24" fill="#8b5e3c"/>
+      <ellipse cx="60" cy="96" rx="19" ry="18" fill="#ecd9bf"/>
+      <ellipse cx="46" cy="115" rx="9" ry="4.5" fill="#6f4a2f"/>
+      <ellipse cx="74" cy="115" rx="9" ry="4.5" fill="#6f4a2f"/>
+      <circle cx="32" cy="24" r="8" fill="#8b5e3c"/>
+      <circle cx="32" cy="24" r="4" fill="#5c3d27"/>
+      <circle cx="88" cy="24" r="8" fill="#8b5e3c"/>
+      <circle cx="88" cy="24" r="4" fill="#5c3d27"/>
+      <ellipse cx="60" cy="44" rx="34" ry="28" fill="#8b5e3c"/>
+      <ellipse cx="60" cy="56" rx="21" ry="14" fill="#ecd9bf"/>
+      <g class="o-brows" stroke="#2b1d14" stroke-width="2" stroke-linecap="round">
+        <path d="M39 29 l10 -4"/><path d="M81 29 l-10 -4"/>
+      </g>
+      <g class="o-look">
+        <g class="o-eyes">
+          <circle cx="45" cy="40" r="4.5" fill="#2b1d14"/>
+          <circle cx="75" cy="40" r="4.5" fill="#2b1d14"/>
+          <circle cx="46.6" cy="38.4" r="1.4" fill="#fff"/>
+          <circle cx="76.6" cy="38.4" r="1.4" fill="#fff"/>
+        </g>
+      </g>
+      <g class="o-happy" stroke="#2b1d14" stroke-width="2.2" fill="none" stroke-linecap="round">
+        <path d="M40 41 Q45 35 50 41"/><path d="M70 41 Q75 35 80 41"/>
+      </g>
+      <ellipse cx="60" cy="50" rx="6" ry="4" fill="#2b1d14"/>
+      <path class="o-smile" d="M53 57 Q56.5 61 60 57 Q63.5 61 67 57" stroke="#2b1d14" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <ellipse class="o-gasp" cx="60" cy="61" rx="3.5" ry="4.5" fill="#2b1d14"/>
+      <g stroke="#5c3d27" stroke-width="1.2" stroke-linecap="round">
+        <path d="M40 54 l-14 -2"/><path d="M40 58 l-14 2"/><path d="M80 54 l14 -2"/><path d="M80 58 l14 2"/>
+      </g>
+      <ellipse cx="46" cy="77" rx="7" ry="5" fill="#6f4a2f"/>
+      <ellipse class="o-paw-r" cx="74" cy="77" rx="7" ry="5" fill="#6f4a2f"/>
+      <g class="o-raised">
+        <path d="M80 88 Q92 76 96 60" stroke="#8b5e3c" stroke-width="10" fill="none" stroke-linecap="round"/>
+        <ellipse cx="97" cy="57" rx="6.5" ry="7.5" fill="#6f4a2f"/>
+      </g>
+    </g>
+  </svg>
+</template>
+
+<!-- 1. Betöltés -->
+<section id="view-load" class="view active">
+  <div class="otter-slot" data-otter="wave"></div>
+  <h1>typeUp</h1>
+  <p class="lead muted">Gépelésgyakorló a Bexpész-feladatgyűjteményhez</p>
+  <div id="drop">
+    <p>Húzd ide a feladatfájlt (<code>.xml</code>), vagy</p>
+    <label class="visually-hidden" for="file">Feladatfájl</label>
+    <input id="file" class="visually-hidden" type="file" accept=".xml,text/xml,application/xml">
+    <button id="pick" class="primary" type="button">Fájl kiválasztása</button>
+    <div id="load-error" class="error-msg" role="alert"></div>
+  </div>
+</section>
+
+<!-- 2. Feladatválasztó -->
+<section id="view-list" class="view">
+  <div class="list-head">
+    <div class="grow">
+      <h1>Feladatok</h1>
+      <div id="file-name" class="file-name muted"></div>
+    </div>
+    <button id="other-file" type="button">Másik fájl</button>
+  </div>
+  <input id="search" type="search" placeholder="Keresés címre vagy számra (pl. vessző, 1.15)" autocomplete="off">
+  <div id="tree" class="card"></div>
+</section>
+
+<!-- 3. Gépelés -->
+<section id="view-type" class="view">
+  <div class="type-head">
+    <button id="back" type="button" title="Vissza a listához">← Lista</button>
+    <span id="task-num" class="num"></span>
+    <h2 id="task-title"></h2>
+  </div>
+  <div class="stats">
+    <span class="stat">Idő: <b id="st-time">0:00</b></span>
+    <span class="stat err">Hibák: <b id="st-errors">0</b></span>
+    <div class="progress" aria-hidden="true"><div id="st-progress"></div></div>
+  </div>
+  <div class="card type-card">
+    <div id="pattern" aria-label="Minta"></div>
+    <textarea id="input" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" aria-label="Ide gépelj"></textarea>
+    <div class="otter-slot" data-otter="idle"></div>
+  </div>
+</section>
+
+<!-- 4. Eredmény -->
+<section id="view-result" class="view">
+  <div class="card">
+    <div class="otter-slot" data-otter="idle"></div>
+    <h2 class="res-title">Kész!</h2>
+    <div id="res-task" class="muted"></div>
+    <div class="metrics">
+      <div class="metric"><div class="v" id="res-time"></div><div class="l">idő</div></div>
+      <div class="metric"><div class="v" id="res-errors"></div><div class="l">hiba</div></div>
+      <div class="metric"><div class="v" id="res-kpm"></div><div class="l">leütés/perc</div></div>
+      <div class="metric"><div class="v" id="res-acc"></div><div class="l">pontosság</div></div>
+    </div>
+    <div class="missed" id="res-missed"></div>
+    <div class="actions">
+      <button id="res-next" class="primary" type="button">Következő feladat</button>
+      <button id="res-again" type="button">Újra</button>
+      <button id="res-list" type="button">Vissza a listához</button>
+    </div>
+  </div>
+</section>
+
+<script>
+'use strict';
+
+const $ = (id) => document.getElementById(id);
+
+// ---------- Adatok ----------
+
+let collection = null;      // { items: Map<id, item>, roots: id[], order: id[] }
+let currentId = null;
+const openFolders = new Set();
+
+/**
+ * Feldolgozza a Bexpész XML-t. Az elemek lapos listában állnak, a hierarchiát az ItemLink-ek adják.
+ * Visszaad: { items: Map<id, item>, roots: [id], order: [feladat-id-k fa-bejárási sorrendben] }.
+ */
+function parseCollection(xmlText) {
+  const text = xmlText.replace(/^﻿/, '');
+  const doc = new DOMParser().parseFromString(text, 'application/xml');
+  if (doc.getElementsByTagName('parsererror').length) throw new Error('A fájl nem érvényes XML.');
+  const itemsEl = [...doc.documentElement.children].find((el) => el.tagName === 'Items');
+  if (!itemsEl) throw new Error('Nem találom a feladatlistát (<Items>) a fájlban.');
+
+  const items = new Map();
+  const fileOrder = [];
+  for (const el of itemsEl.children) {
+    if (el.tagName !== 'Item') continue;
+    const id = el.getAttribute('Id');
+    const type = el.getAttribute('ItemType');
+    const item = { id, type, title: el.getAttribute('Title') || '', children: [], parent: null, number: '' };
+    if (type === 'Folder') {
+      const sub = [...el.children].find((c) => c.tagName === 'Items');
+      if (sub) item.children = [...sub.children].filter((c) => c.tagName === 'ItemLink').map((c) => c.getAttribute('Id'));
+    } else {
+      const rules = [...el.children].find((c) => c.tagName === 'Rules');
+      const textEl = [...el.children].find((c) => c.tagName === 'TaskText');
+      item.text = (textEl ? textEl.textContent : '').replace(/\r\n?/g, '\n');
+      item.enterRequired = !rules || rules.getAttribute('IsEnterRequiredOnLineEnds') !== 'False';
+      item.disabled = item.text.length === 0;
+    }
+    items.set(id, item);
+    fileOrder.push(id);
+  }
+
+  for (const item of items.values()) {
+    item.children = item.children.filter((cid) => items.has(cid));
+    for (const cid of item.children) items.get(cid).parent = item.id;
+  }
+  const roots = fileOrder.filter((id) => items.get(id).parent === null);
+  if (!roots.length) throw new Error('A fájlban nincs egyetlen feladat sem.');
+
+  const order = [];
+  const visit = (id, number) => {
+    const item = items.get(id);
+    item.number = number;
+    if (item.type === 'Folder') item.children.forEach((cid, i) => visit(cid, `${number}.${i + 1}`));
+    else order.push(id);
+  };
+  roots.forEach((id, i) => visit(id, String(i + 1)));
+  return { items, roots, order };
+}
+
+// ---------- Nézetek ----------
+
+function showView(name) {
+  document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${name}`));
+  if (name !== 'type') stopTimer();
+}
+
+// ---------- Vidra ----------
+
+const otterTpl = $('otter-tpl');
+document.querySelectorAll('[data-otter]').forEach((slot) => {
+  const svg = otterTpl.content.firstElementChild.cloneNode(true);
+  svg.setAttribute('class', `otter ${slot.dataset.otter}`);
+  slot.appendChild(svg);
+});
+const typeOtter = document.querySelector('#view-type .otter');
+const resultOtter = document.querySelector('#view-result .otter');
+
+function setOtterMode(svg, mode) {
+  const oops = svg.classList.contains('oops');
+  svg.setAttribute('class', `otter ${mode}${oops ? ' oops' : ''}`);
+}
+
+let oopsTimer = null;
+function otterOops(svg) {
+  svg.classList.remove('oops');
+  void svg.getBoundingClientRect();
+  svg.classList.add('oops');
+  clearTimeout(oopsTimer);
+  oopsTimer = setTimeout(() => svg.classList.remove('oops'), 650);
+}
+
+function otterFlip(svg) {
+  svg.setAttribute('class', 'otter idle');
+  void svg.getBoundingClientRect();
+  svg.setAttribute('class', 'otter idle flip');
+}
+resultOtter.addEventListener('animationend', (e) => {
+  if (e.animationName === 'flip') resultOtter.setAttribute('class', 'otter idle');
+});
+resultOtter.parentElement.style.pointerEvents = 'auto';
+resultOtter.addEventListener('click', () => otterFlip(resultOtter));
+
+// ---------- Betöltés ----------
+
+async function loadFile(file) {
+  const err = $('load-error');
+  err.textContent = '';
+  try {
+    collection = parseCollection(await file.text());
+  } catch (e) {
+    err.textContent = `Nem sikerült betölteni: ${e.message}`;
+    showView('load');
+    return;
+  }
+  openFolders.clear();
+  currentId = null;
+  $('file-name').textContent = file.name;
+  $('search').value = '';
+  renderTree('');
+  showView('list');
+  $('search').focus();
+}
+
+$('pick').addEventListener('click', () => $('file').click());
+$('file').addEventListener('change', (e) => {
+  const f = e.target.files[0];
+  if (f) loadFile(f);
+  e.target.value = '';
+});
+
+const drop = $('drop');
+let dragDepth = 0;
+window.addEventListener('dragenter', (e) => { e.preventDefault(); if (++dragDepth) drop.classList.add('over'); });
+window.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; drop.classList.remove('over'); } });
+window.addEventListener('dragover', (e) => e.preventDefault());
+window.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dragDepth = 0;
+  drop.classList.remove('over');
+  if ($('view-type').classList.contains('active')) return;
+  const f = e.dataTransfer && e.dataTransfer.files[0];
+  if (f) loadFile(f);
+});
+$('other-file').addEventListener('click', () => showView('load'));
+
+// ---------- Feladatválasztó ----------
+
+const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function highlight(s, q) {
+  if (!q) return esc(s);
+  const i = s.toLowerCase().indexOf(q);
+  if (i < 0) return esc(s);
+  return esc(s.slice(0, i)) + '<mark>' + esc(s.slice(i, i + q.length)) + '</mark>' + esc(s.slice(i + q.length));
+}
+
+/** A fa HTML-je. Szűréskor a találatok, az őseik (kinyitva) és a talált mappák teljes tartalma látszik. */
+function renderTree(filter) {
+  const q = filter.trim().toLowerCase();
+  const { items, roots } = collection;
+  let visible = null;
+  let expanded = null;
+  if (q) {
+    visible = new Set();
+    expanded = new Set();
+    const addSubtree = (id) => { visible.add(id); items.get(id).children.forEach(addSubtree); };
+    for (const item of items.values()) {
+      const hit = item.title.toLowerCase().includes(q) || item.number === q;
+      if (!hit) continue;
+      addSubtree(item.id);
+      if (item.type === 'Folder') expanded.add(item.id);
+      for (let p = item.parent; p !== null; p = items.get(p).parent) { visible.add(p); expanded.add(p); }
+    }
+  }
+
+  // A testvérek számai egyforma szélesek, hogy a címek egy vonalba essenek.
+  const numWidth = (ids) => Math.max(...ids.map((i) => items.get(i).number.length));
+  const render = (id, width) => {
+    if (visible && !visible.has(id)) return '';
+    const it = items.get(id);
+    const numHit = q && it.number === q;
+    const num = `<span class="num" style="min-width:${width}ch">${numHit ? `<mark>${esc(it.number)}</mark>` : esc(it.number)}</span>`;
+    const title = `<span class="title">${highlight(it.title, q)}</span>`;
+    if (it.type === 'Folder') {
+      const open = expanded ? expanded.has(id) : openFolders.has(id);
+      return `<details data-id="${esc(id)}"${open ? ' open' : ''}><summary>${num}${title}</summary>`
+        + `<div class="children">${it.children.map((c) => render(c, numWidth(it.children))).join('')}</div></details>`;
+    }
+    const meta = it.disabled ? 'üres' : `${it.text.length} karakter`;
+    return `<button type="button" class="task${id === currentId ? ' last' : ''}" data-id="${esc(id)}"${it.disabled ? ' disabled' : ''}>`
+      + `${num}${title}<span class="meta">${meta}</span></button>`;
+  };
+  const html = roots.map((r) => render(r, numWidth(roots))).join('');
+  $('tree').innerHTML = html || '<div class="empty muted">Nincs találat.</div>';
+}
+
+$('search').addEventListener('input', (e) => renderTree(e.target.value));
+$('tree').addEventListener('toggle', (e) => {
+  if ($('search').value.trim()) return;
+  const id = e.target.dataset.id;
+  if (e.target.open) openFolders.add(id); else openFolders.delete(id);
+}, true);
+$('tree').addEventListener('click', (e) => {
+  const btn = e.target.closest('button.task');
+  if (btn && !btn.disabled) startTask(btn.dataset.id);
+});
+
+function backToList() {
+  renderTree($('search').value);
+  if (!document.querySelector('#tree .task.last')) {
+    $('search').value = '';
+    renderTree('');
+  }
+  showView('list');
+  const last = document.querySelector('#tree .task.last');
+  if (last) { last.scrollIntoView({ block: 'center' }); last.focus({ preventScroll: true }); }
+}
+
+// ---------- Gépelés ----------
+
+const pattern = $('pattern');
+const input = $('input');
+let st = null;              // a gépelési állapot
+let spans = [];
+let timerId = null;
+let idleTimer = null;
+
+/** Elfogadható-e a leütött karakter a várt helyén. Ha nem kell Enter, sorvégen a szóköz is jó. */
+function matches(expected, typed) {
+  return typed === expected || (expected === '\n' && typed === ' ' && !st.enterRequired);
+}
+
+function startTask(id) {
+  const item = collection.items.get(id);
+  currentId = id;
+  for (let p = item.parent; p !== null; p = collection.items.get(p).parent) openFolders.add(p);
+  stopTimer();
+  st = {
+    target: item.text,
+    typed: '',
+    ok: [],
+    errors: 0,
+    missCounts: {},
+    keystrokes: 0,
+    startTime: null,
+    endTime: null,
+    enterRequired: item.enterRequired,
+    composing: false,
+  };
+
+  $('task-num').textContent = item.number;
+  $('task-title').textContent = item.title;
+  renderPattern();
+  input.value = '';
+  input.disabled = false;
+  input.maxLength = st.target.length;
+  updateStats();
+  setOtterMode(typeOtter, 'idle');
+  showView('type');
+  pattern.scrollTop = 0;
+  window.scrollTo(0, 0);
+  input.focus();
+}
+
+function renderPattern() {
+  const frag = document.createDocumentFragment();
+  spans = [];
+  for (const ch of st.target) {
+    const span = document.createElement('span');
+    if (ch === '\n') {
+      span.textContent = '↵';
+      span.className = 'nl';
+      span.dataset.base = 'nl';
+      frag.appendChild(span);
+      frag.appendChild(document.createTextNode('\n'));
+    } else {
+      span.textContent = ch;
+      span.dataset.base = '';
+      frag.appendChild(span);
+    }
+    spans.push(span);
+  }
+  pattern.replaceChildren(frag);
+  if (spans.length) spans[0].classList.add('current');
+}
+
+/** Csak a [from, to) tartományba eső spanok állapotát frissíti. */
+function updateSpans(from, to) {
+  const n = st.typed.length;
+  for (let i = Math.max(0, from); i < Math.min(to, spans.length); i++) {
+    const state = i < n ? (st.ok[i] ? 'done' : 'wrong') : i === n ? 'current' : '';
+    const cls = [spans[i].dataset.base, state].filter(Boolean).join(' ');
+    if (spans[i].className !== cls) spans[i].className = cls;
+  }
+}
+
+function scrollToCurrent() {
+  const span = spans[Math.min(st.typed.length, spans.length - 1)];
+  if (!span) return;
+  const top = span.offsetTop;
+  const h = pattern.clientHeight;
+  if (top < pattern.scrollTop + h * 0.15 || top > pattern.scrollTop + h * 0.6) {
+    pattern.scrollTop = Math.max(0, top - h / 3);
+  }
+}
+
+function onInput() {
+  if (!st || st.endTime || st.composing) return;
+  let val = input.value;
+  if (val.length > st.target.length) {
+    val = val.slice(0, st.target.length);
+    input.value = val;
+  }
+  const prev = st.typed;
+  let p = 0;
+  const m = Math.min(val.length, prev.length);
+  while (p < m && val[p] === prev[p]) p++;
+
+  st.ok.length = p;
+  const added = val.slice(p);
+  let hadError = false;
+  for (let k = 0; k < added.length; k++) {
+    const pos = p + k;
+    const expected = st.target[pos];
+    const good = matches(expected, added[k]);
+    st.ok[pos] = good;
+    st.keystrokes++;
+    if (!good) {
+      st.errors++;
+      st.missCounts[expected] = (st.missCounts[expected] || 0) + 1;
+      hadError = true;
+    }
+  }
+  st.typed = val;
+
+  if (added.length && !st.startTime) {
+    st.startTime = performance.now();
+    timerId = setInterval(updateTime, 200);
+  }
+
+  updateSpans(p, Math.max(prev.length, val.length) + 1);
+  updateStats();
+  scrollToCurrent();
+  if (added.length) input.scrollTop = input.scrollHeight;
+
+  if (hadError) otterOops(typeOtter);
+  setOtterMode(typeOtter, 'typing');
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => setOtterMode(typeOtter, 'idle'), 1800);
+
+  if (st.typed.length === st.target.length) finish();
+}
+
+function fmtTime(ms) {
+  const s = Math.floor(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+function elapsed() {
+  if (!st || !st.startTime) return 0;
+  return (st.endTime || performance.now()) - st.startTime;
+}
+
+function updateTime() { $('st-time').textContent = fmtTime(elapsed()); }
+
+function updateStats() {
+  updateTime();
+  $('st-errors').textContent = st.errors;
+  $('st-progress').style.width = `${st.target.length ? (st.typed.length / st.target.length) * 100 : 0}%`;
+}
+
+function stopTimer() {
+  clearInterval(timerId);
+  timerId = null;
+  clearTimeout(idleTimer);
+}
+
+input.addEventListener('input', onInput);
+input.addEventListener('compositionstart', () => { if (st) st.composing = true; });
+input.addEventListener('compositionend', () => { if (st) { st.composing = false; onInput(); } });
+
+// Beillesztés, húzás és visszavonás tiltása
+input.addEventListener('paste', (e) => e.preventDefault());
+input.addEventListener('drop', (e) => e.preventDefault());
+input.addEventListener('beforeinput', (e) => {
+  if (/^(insertFromPaste|insertFromDrop|insertFromYank|historyUndo|historyRedo)$/.test(e.inputType)) e.preventDefault();
+});
+
+// A kurzor mindig a szöveg végén marad
+function caretToEnd() {
+  const n = input.value.length;
+  if (input.selectionStart !== n || input.selectionEnd !== n) input.setSelectionRange(n, n);
+}
+const NAV_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown']);
+input.addEventListener('keydown', (e) => {
+  if (NAV_KEYS.has(e.key)) e.preventDefault();
+  caretToEnd();
+});
+input.addEventListener('mouseup', caretToEnd);
+input.addEventListener('select', caretToEnd);
+input.addEventListener('focus', () => setTimeout(caretToEnd));
+document.addEventListener('selectionchange', () => { if (document.activeElement === input) caretToEnd(); });
+pattern.addEventListener('click', () => input.focus());
+
+$('back').addEventListener('click', backToList);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && $('view-type').classList.contains('active')) backToList();
+});
+
+// ---------- Eredmény ----------
+
+const CHAR_NAMES = { ' ': 'szóköz', '\n': 'Enter' };
+
+function nextTaskId() {
+  const { order, items } = collection;
+  for (let i = order.indexOf(currentId) + 1; i < order.length; i++) {
+    if (!items.get(order[i]).disabled) return order[i];
+  }
+  return null;
+}
+
+function finish() {
+  st.endTime = performance.now();
+  stopTimer();
+  updateStats();
+  input.disabled = true;
+
+  const ms = elapsed();
+  const minutes = ms / 60000;
+  const kpm = minutes > 0 ? Math.round(st.keystrokes / minutes) : 0;
+  const acc = st.keystrokes ? ((st.keystrokes - st.errors) / st.keystrokes) * 100 : 100;
+  const item = collection.items.get(currentId);
+
+  $('res-task').textContent = `${item.number} · ${item.title}`;
+  $('res-time').textContent = fmtTime(ms);
+  $('res-errors').textContent = st.errors;
+  $('res-kpm').textContent = kpm;
+  $('res-acc').textContent = `${acc.toFixed(1).replace('.', ',')}%`;
+
+  const missed = Object.entries(st.missCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  $('res-missed').innerHTML = missed.length
+    ? '<div class="muted">Legtöbbet tévesztett karakterek</div><ul>'
+      + missed.map(([ch, n]) => `<li><span class="ch">${esc(CHAR_NAMES[ch] || ch)}</span> × ${n}</li>`).join('')
+      + '</ul>'
+    : '<div class="muted">Hibátlan!</div>';
+
+  const next = nextTaskId();
+  $('res-next').disabled = !next;
+  showView('result');
+  window.scrollTo(0, 0);
+  otterFlip(resultOtter);
+  const focusBtn = next ? $('res-next') : $('res-list');
+  setTimeout(() => { if ($('view-result').classList.contains('active')) focusBtn.focus(); }, 1200);
+}
+
+$('res-next').addEventListener('click', () => { const id = nextTaskId(); if (id) startTask(id); });
+$('res-again').addEventListener('click', () => startTask(currentId));
+$('res-list').addEventListener('click', backToList);
+</script>
+</body>
+</html>
