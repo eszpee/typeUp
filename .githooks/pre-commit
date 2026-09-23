@@ -1,0 +1,16 @@
+#!/bin/sh
+# Minden commit új verziószámot kap: az eddigi commitok száma + 1.
+# Az index.html-ben a <p id="version"> tartalmát írja át, a stage-elt és a munkapéldányban is.
+# Bekapcsolás klónozás után: git config core.hooksPath .githooks
+
+file=index.html
+git cat-file -e ":$file" 2>/dev/null || exit 0
+
+n=$(( $(git rev-list --count HEAD 2>/dev/null || echo 0) + 1 ))
+subst="s|(<p id=\"version\"[^>]*>)v[0-9]+(</p>)|\${1}v$n\${2}|"
+
+# A stage-elt változatot közvetlenül írjuk, hogy a nem stage-elt módosítások ne kerüljenek be.
+blob=$(git show ":$file" | perl -pe "$subst" | git hash-object -w --stdin) || exit 1
+git update-index --cacheinfo "100644,$blob,$file" || exit 1
+[ -f "$file" ] && perl -pi -e "$subst" "$file"
+exit 0
