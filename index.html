@@ -258,7 +258,7 @@
     <button id="pick" class="primary" type="button">Fájl kiválasztása</button>
     <div id="load-error" class="error-msg" role="alert"></div>
   </div>
-  <p id="version" class="version muted">v9</p>
+  <p id="version" class="version muted">v10</p>
 </section>
 
 <!-- 2. Feladatválasztó -->
@@ -409,7 +409,7 @@ function otterOops(svg) {
 }
 
 // Pontosságfüggő tánc: 10% alatt semmi, onnan 10%-os sávonként egyre hosszabb,
-// összetettebb koreográfia; a leghosszabb csak a hibátlan (100%) gépelésé.
+// összetettebb koreográfia; a leghosszabb csak a 100%-osé.
 // Egy mozdulat képkockái: [idő 0..1, x, y, forgás°, scaleX, scaleY]; a forgás
 // a mozdulatok között összeadódik (szaltó után onnan folytatja).
 const MOVES = {
@@ -862,7 +862,7 @@ function finish() {
   const ms = elapsed();
   const minutes = ms / 60000;
   const kpm = minutes > 0 ? Math.round(st.keystrokes / minutes) : 0;
-  const acc = st.keystrokes ? ((st.keystrokes - st.errors) / st.keystrokes) * 100 : 100;
+  const acc = st.keystrokes ? Math.round(((st.keystrokes - st.errors) / st.keystrokes) * 100) : 100;
   const item = collection.items.get(currentId);
 
   const complete = st.typed.length === st.target.length;
@@ -872,8 +872,7 @@ function finish() {
   $('res-time').textContent = fmtTime(ms);
   $('res-errors').textContent = st.errors;
   $('res-kpm').textContent = kpm;
-  const accShown = st.errors ? Math.min(acc, 99.9) : acc;
-  $('res-acc').textContent = `${accShown.toFixed(1).replace('.', ',')}%`;
+  $('res-acc').textContent = `${acc}%`;
 
   const missed = Object.entries(st.missCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
   $('res-missed').innerHTML = missed.length
@@ -886,7 +885,7 @@ function finish() {
   $('res-next').disabled = !next;
   showView('result');
   window.scrollTo(0, 0);
-  // 0–9: 10%-os sávok, 10: csak hibátlan gépelésnél (acc pontosan 100)
+  // 0–9: 10%-os sávok, 10: csak 100%-nál (a kerekített pontosság alapján)
   lastDance = st.keystrokes ? Math.max(0, Math.floor(acc / 10)) : 0;
   otterDance(resultOtter, lastDance);
   const focusBtn = next ? $('res-next') : $('res-list');
