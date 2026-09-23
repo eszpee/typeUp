@@ -65,6 +65,8 @@
   }
   #drop.over { border-color: var(--accent); background: var(--accent-soft); }
   #drop p { margin: 0 0 16px; }
+  #sample { display: block; margin: 14px auto 0; background: none; border-color: transparent; color: var(--muted); font-size: .9rem; text-decoration: underline; text-underline-offset: 3px; }
+  #sample:hover { color: var(--accent); border-color: transparent; }
   .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .error-msg { color: var(--error); margin-top: 16px; min-height: 1.5em; }
   .version { margin: 28px 0 0; font-size: .8rem; opacity: .7; }
@@ -256,9 +258,10 @@
     <label class="visually-hidden" for="file">Feladatfájl</label>
     <input id="file" class="visually-hidden" type="file" accept=".xml,text/xml,application/xml">
     <button id="pick" class="primary" type="button">Fájl kiválasztása</button>
+    <button id="sample" type="button">mintafeladat</button>
     <div id="load-error" class="error-msg" role="alert"></div>
   </div>
-  <p id="version" class="version muted">v11</p>
+  <p id="version" class="version muted">v12</p>
 </section>
 
 <!-- 2. Feladatválasztó -->
@@ -543,6 +546,15 @@ window.addEventListener('drop', (e) => {
 });
 $('other-file').addEventListener('click', () => showView('load'));
 
+// Fájl nélkül is kipróbálható: egyetlen rövid feladat, a listát kihagyva.
+const SAMPLE_TEXT = 'Csobban a vidra, fut a hal,\na nádas mélyén zeng a dal.\nHanyatt úszik, pihen, lebeg,\nbajuszán a napfény remeg.';
+$('sample').addEventListener('click', () => {
+  const item = { id: 'minta', type: 'Task', title: 'Mintafeladat', children: [], parent: null, number: '1', text: SAMPLE_TEXT, disabled: false };
+  collection = { items: new Map([[item.id, item]]), roots: [item.id], order: [item.id], sample: true };
+  $('load-error').textContent = '';
+  startTask(item.id);
+});
+
 // ---------- Feladatválasztó ----------
 
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -606,6 +618,7 @@ $('tree').addEventListener('click', (e) => {
 });
 
 function backToList() {
+  if (collection.sample) { showView('load'); return; }
   renderTree($('search').value);
   if (!document.querySelector('#tree .task.last')) {
     $('search').value = '';
