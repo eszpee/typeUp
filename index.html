@@ -69,7 +69,7 @@
   #sample:hover { color: var(--accent); border-color: transparent; }
   .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .error-msg { color: var(--error); margin-top: 16px; min-height: 1.5em; }
-  .version { margin: 28px 0 0; font-size: .8rem; opacity: .7; }
+  .version { margin: -20px 0 24px; text-align: center; font-size: .8rem; opacity: .7; }
 
   /* Feladatválasztó */
   .list-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -261,7 +261,6 @@
     <button id="sample" type="button">mintafeladat</button>
     <div id="load-error" class="error-msg" role="alert"></div>
   </div>
-  <p id="version" class="version muted">v13</p>
 </section>
 
 <!-- 2. Feladatválasztó -->
@@ -321,6 +320,8 @@
     </div>
   </div>
 </section>
+
+<footer id="version" class="version muted">v14</footer>
 
 <script>
 'use strict';
