@@ -143,7 +143,7 @@
 
   /* Eredmény */
   #view-result .card { text-align: center; }
-  #view-result .otter-slot { width: 140px; margin: 40px auto 8px; }
+  #view-result .otter-slot { position: relative; width: 140px; margin: 40px auto 8px; }
   #view-result .res-title { margin-bottom: 4px; }
   .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 24px 0; }
   .metric { background: var(--bg); border-radius: 12px; padding: 14px; }
@@ -159,7 +159,7 @@
   .otter { display: block; width: 100%; height: auto; overflow: visible; }
   .otter * { transform-box: fill-box; transform-origin: center; }
   .otter .o-all { transform-box: view-box; transform-origin: 60px 70px; }
-  .otter .o-brows, .otter .o-gasp, .otter .o-raised, .otter .o-happy { display: none; }
+  .otter .o-brows, .otter .o-gasp, .otter .o-raised, .otter .o-raised-l, .otter .o-happy { display: none; }
   .otter .o-look { transition: transform .25s; }
   .otter.idle .o-eyes, .otter.wave .o-eyes, .otter.typing .o-eyes { animation: blink 4.2s infinite; }
   @keyframes blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
@@ -172,17 +172,17 @@
   .otter.oops .o-brows, .otter.oops .o-gasp { display: inline; }
   .otter.oops .o-smile { display: none; }
   @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-4px); } 40% { transform: translateX(4px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
-  .otter.flip .o-all { animation: flip 1.2s cubic-bezier(.3, .1, .3, 1) 1; }
-  .otter.flip .o-eyes { display: none; }
-  .otter.flip .o-happy { display: inline; }
-  @keyframes flip {
-    0% { transform: translateY(0) rotate(0) scaleY(1); }
-    15% { transform: translateY(6px) rotate(0) scaleY(.9); }
-    50% { transform: translateY(-70px) rotate(-180deg) scaleY(1); }
-    82% { transform: translateY(-8px) rotate(-345deg); }
-    90% { transform: translateY(4px) rotate(-360deg) scaleY(.92); }
-    100% { transform: translateY(0) rotate(-360deg) scaleY(1); }
-  }
+  /* Tánc az eredményoldalon: a mozgást JS (Web Animations) adja, ezek a kiegészítők */
+  .otter.joy .o-eyes { display: none; }
+  .otter.joy .o-happy { display: inline; }
+  .otter.arms .o-paw-r { display: none; }
+  .otter.arms .o-raised { display: inline; animation: wave .5s ease-in-out infinite; transform-box: view-box; transform-origin: 84px 86px; }
+  .otter.arms2 .o-paw-l { display: none; }
+  .otter.arms2 .o-raised-l { display: inline; animation: wave-l .5s ease-in-out infinite; transform-box: view-box; transform-origin: 36px 86px; }
+  @keyframes wave-l { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-22deg); } }
+  .burst { position: absolute; left: 50%; top: 45%; pointer-events: none; will-change: transform, opacity; }
+  .burst.confetti { width: 7px; height: 11px; border-radius: 2px; }
+  .burst.spark { font-size: 16px; line-height: 1; }
 
   @media (max-width: 560px) {
     .view { padding-top: 20px; }
@@ -232,11 +232,15 @@
       <g stroke="#5c3d27" stroke-width="1.2" stroke-linecap="round">
         <path d="M40 54 l-14 -2"/><path d="M40 58 l-14 2"/><path d="M80 54 l14 -2"/><path d="M80 58 l14 2"/>
       </g>
-      <ellipse cx="46" cy="77" rx="7" ry="5" fill="#6f4a2f"/>
+      <ellipse class="o-paw-l" cx="46" cy="77" rx="7" ry="5" fill="#6f4a2f"/>
       <ellipse class="o-paw-r" cx="74" cy="77" rx="7" ry="5" fill="#6f4a2f"/>
       <g class="o-raised">
         <path d="M80 88 Q92 76 96 60" stroke="#8b5e3c" stroke-width="10" fill="none" stroke-linecap="round"/>
         <ellipse cx="97" cy="57" rx="6.5" ry="7.5" fill="#6f4a2f"/>
+      </g>
+      <g class="o-raised-l">
+        <path d="M40 88 Q28 76 24 60" stroke="#8b5e3c" stroke-width="10" fill="none" stroke-linecap="round"/>
+        <ellipse cx="23" cy="57" rx="6.5" ry="7.5" fill="#6f4a2f"/>
       </g>
     </g>
   </svg>
@@ -254,7 +258,7 @@
     <button id="pick" class="primary" type="button">Fájl kiválasztása</button>
     <div id="load-error" class="error-msg" role="alert"></div>
   </div>
-  <p id="version" class="version muted">v7</p>
+  <p id="version" class="version muted">v8</p>
 </section>
 
 <!-- 2. Feladatválasztó -->
@@ -404,16 +408,92 @@ function otterOops(svg) {
   oopsTimer = setTimeout(() => svg.classList.remove('oops'), 650);
 }
 
-function otterFlip(svg) {
-  svg.setAttribute('class', 'otter idle');
-  void svg.getBoundingClientRect();
-  svg.setAttribute('class', 'otter idle flip');
+// Pontosságfüggő tánc: 10%-os sávonként egyre hosszabb, összetettebb koreográfia.
+// Egy mozdulat képkockái: [idő 0..1, x, y, forgás°, scaleX, scaleY]; a forgás
+// a mozdulatok között összeadódik (szaltó után onnan folytatja).
+const MOVES = {
+  sway: (a) => ({ ms: 800, f: [[0, 0, 0, 0, 1, 1], [.25, -3, 0, -a, 1, 1], [.75, 3, 0, a, 1, 1], [1, 0, 0, 0, 1, 1]] }),
+  shimmy: () => ({ ms: 700, f: [[0, 0, 0, 0, 1, 1], [.125, -5, 0, -3, 1, 1], [.375, 5, 0, 3, 1, 1], [.625, -5, 0, -3, 1, 1], [.875, 5, 0, 3, 1, 1], [1, 0, 0, 0, 1, 1]] }),
+  hop: (h) => ({ ms: 450 + h * 6, f: [[0, 0, 0, 0, 1, 1], [.2, 0, 4, 0, 1.06, .88], [.5, 0, -h, 0, .96, 1.06], [.8, 0, 3, 0, 1.08, .9], [1, 0, 0, 0, 1, 1]] }),
+  turn: () => ({ ms: 900, f: [[0, 0, 0, 0, 1, 1], [.25, 0, -6, 0, 0, 1], [.5, 0, -10, 0, -1, 1], [.75, 0, -6, 0, 0, 1], [1, 0, 0, 0, 1, 1]] }),
+  spin: () => ({ ms: 900, f: [[0, 0, 0, 0, 1, 1], [.125, 0, -4, 0, 0, 1], [.25, 0, -8, 0, -1, 1], [.375, 0, -10, 0, 0, 1], [.5, 0, -10, 0, 1, 1], [.625, 0, -10, 0, 0, 1], [.75, 0, -8, 0, -1, 1], [.875, 0, -4, 0, 0, 1], [1, 0, 0, 0, 1, 1]] }),
+  flip: (h, n) => ({ ms: 1000 + 300 * n, f: [[0, 0, 0, 0, 1, 1], [.15, 0, 6, 0, 1, .9], [.5, 0, -h, -180 * n, 1, 1], [.82, 0, -8, -360 * n + 15, 1, 1], [.9, 0, 4, -360 * n, 1, .92], [1, 0, 0, -360 * n, 1, 1]] }),
+  pose: () => ({ ms: 1000, f: [[0, 0, 0, 0, 1, 1], [.3, 0, -4, 0, 1.15, 1.15], [.8, 0, -4, 0, 1.15, 1.15], [1, 0, 0, 0, 1, 1]] }),
+};
+// Sávonként: mozdulatsor, kiegészítők (joy: boldog szem, arms/arms2: integetés)
+// és { burst: [fajta, darab] } lépések, amelyek ott csillámot/konfettit szórnak.
+const M = MOVES;
+const DANCES = [
+  { fx: '', seq: [M.sway(4)] },
+  { fx: '', seq: [M.sway(8), M.sway(8)] },
+  { fx: '', seq: [M.sway(8), M.hop(18), M.sway(8)] },
+  { fx: 'joy', seq: [M.hop(16), M.hop(24), M.sway(10), M.hop(20)] },
+  { fx: 'joy arms', seq: [M.shimmy(), M.hop(24), M.shimmy(), M.hop(28)] },
+  { fx: 'joy arms', seq: [M.sway(10), M.turn(), M.hop(30), M.turn(), M.hop(20)] },
+  { fx: 'joy arms', seq: [M.shimmy(), M.hop(24), M.turn(), M.flip(70, 1), M.hop(16)] },
+  { fx: 'joy arms', seq: [M.shimmy(), M.turn(), M.hop(30), M.flip(75, 1), { burst: ['spark', 8] }, M.shimmy(), M.hop(24)] },
+  { fx: 'joy arms arms2', seq: [M.shimmy(), M.hop(30), M.turn(), M.flip(90, 2), { burst: ['spark', 16] }, M.spin(), M.hop(24), M.pose()] },
+  { fx: 'joy arms arms2', seq: [M.shimmy(), M.turn(), M.hop(30), M.hop(40), M.flip(95, 2), { burst: ['confetti', 40] },
+    M.spin(), M.shimmy(), M.flip(80, 1), { burst: ['spark', 16] }, M.pose(), { burst: ['confetti', 60] }] },
+];
+
+let danceAnim = null;
+let danceTimers = [];
+let lastDance = 0;
+
+function otterDance(svg, level) {
+  const dance = DANCES[level];
+  const total = dance.seq.reduce((sum, m) => sum + (m.ms || 0), 0);
+  const frames = [];
+  const bursts = [];
+  let t = 0;
+  let rBase = 0;
+  for (const m of dance.seq) {
+    if (m.burst) { bursts.push([t, ...m.burst]); continue; }
+    for (const [at, x, y, r, sx, sy] of m.f) {
+      if (at === 0 && frames.length) continue;
+      frames.push({
+        offset: (t + at * m.ms) / total,
+        transform: `translate(${x}px, ${y}px) rotate(${rBase + r}deg) scale(${sx}, ${sy})`,
+        easing: 'ease-in-out',
+      });
+    }
+    rBase += m.f[m.f.length - 1][3];
+    t += m.ms;
+  }
+
+  if (danceAnim) danceAnim.cancel();
+  danceTimers.forEach(clearTimeout);
+  svg.setAttribute('class', `otter idle ${dance.fx}`);
+  danceAnim = svg.querySelector('.o-all').animate(frames, { duration: total });
+  danceAnim.onfinish = () => svg.setAttribute('class', 'otter idle');
+  danceTimers = bursts.map(([at, kind, n]) => setTimeout(() => otterBurst(svg.parentElement, kind, n), at));
 }
-resultOtter.addEventListener('animationend', (e) => {
-  if (e.animationName === 'flip') resultOtter.setAttribute('class', 'otter idle');
-});
+
+const CONFETTI_COLORS = ['#e4572e', '#f3a712', '#29bf12', '#2e86de', '#a23b72', '#ff6fb5'];
+function otterBurst(slot, kind, n) {
+  for (let i = 0; i < n; i++) {
+    const el = document.createElement('span');
+    el.className = `burst ${kind}`;
+    const color = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+    if (kind === 'spark') { el.textContent = '✦'; el.style.color = color; } else el.style.background = color;
+    slot.appendChild(el);
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 60 + Math.random() * 90;
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist * .7 - 50;
+    const spin = (Math.random() - .5) * 720;
+    const fall = kind === 'confetti' ? 90 + Math.random() * 60 : 20;
+    el.animate([
+      { transform: 'translate(-50%, -50%) scale(.4) rotate(0)', opacity: 1 },
+      { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1) rotate(${spin / 2}deg)`, opacity: 1, offset: .45 },
+      { transform: `translate(calc(-50% + ${dx * 1.2}px), calc(-50% + ${dy + fall}px)) scale(.9) rotate(${spin}deg)`, opacity: 0 },
+    ], { duration: 1400 + Math.random() * 600, easing: 'cubic-bezier(.2, .7, .4, 1)' }).onfinish = () => el.remove();
+  }
+}
+
 resultOtter.parentElement.style.pointerEvents = 'auto';
-resultOtter.addEventListener('click', () => otterFlip(resultOtter));
+resultOtter.addEventListener('click', () => otterDance(resultOtter, lastDance));
 
 // ---------- Betöltés ----------
 
@@ -801,7 +881,8 @@ function finish() {
   $('res-next').disabled = !next;
   showView('result');
   window.scrollTo(0, 0);
-  otterFlip(resultOtter);
+  lastDance = st.keystrokes ? Math.min(DANCES.length - 1, Math.floor(acc / 10)) : 0;
+  otterDance(resultOtter, lastDance);
   const focusBtn = next ? $('res-next') : $('res-list');
   setTimeout(() => { if ($('view-result').classList.contains('active')) focusBtn.focus(); }, 1200);
 }
