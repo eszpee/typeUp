@@ -185,6 +185,70 @@
   .burst { position: absolute; left: 50%; top: 45%; pointer-events: none; will-change: transform, opacity; }
   .burst.confetti { width: 7px; height: 11px; border-radius: 2px; }
   .burst.spark { font-size: 16px; line-height: 1; }
+  .otter.stash .o-all { animation: stash .45s; }
+  .otter.stash .o-eyes { display: none; }
+  .otter.stash .o-happy { display: inline; }
+  .otter.stash .o-paw-l { transform: translate(5px, 7px); }
+  .otter.stash .o-paw-r { transform: translate(-5px, 7px); }
+  @keyframes stash { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.1, .92); } }
+
+  /* Arany */
+  .coin {
+    display: inline-block; width: .9em; height: .9em; border-radius: 50%; vertical-align: -.1em;
+    background: radial-gradient(circle at 35% 30%, #fff3b8 0 18%, #f6c630 45%, #d99a06 100%);
+    box-shadow: inset 0 0 0 1.5px #c48a05;
+  }
+  .coin.fly { position: fixed; left: 0; top: 0; width: 18px; height: 18px; z-index: 20; pointer-events: none; }
+  .stat.gold b { display: inline-block; color: #a87605; }
+  .stat.gold b.bump { animation: bump .45s; }
+  @keyframes bump { 40% { transform: scale(1.45); } }
+  .gold-pill { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: .35em .9em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #view-load .family-btn { margin-top: 20px; }
+
+  /* Vidracsalád */
+  .scene { position: relative; margin-bottom: 28px; }
+  .scene svg { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+  .scene .otter[data-main] { cursor: pointer; }
+  .scene [data-item] { transform-box: fill-box; transform-origin: 50% 100%; }
+  .sc-sway { transform-box: fill-box; transform-origin: 50% 100%; animation: sway 4s ease-in-out infinite; }
+  @keyframes sway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+  .sc-cloud { animation: drift 18s ease-in-out infinite; }
+  @keyframes drift { 50% { transform: translateX(24px); } }
+  .sc-star { animation: twinkle 2.4s ease-in-out infinite; }
+  @keyframes twinkle { 50% { opacity: .3; } }
+  .sc-smoke { opacity: 0; transform-box: fill-box; transform-origin: center; animation: smoke 3.6s ease-out infinite; }
+  @keyframes smoke { 0% { opacity: .8; transform: translate(0, 0) scale(.6); } 100% { opacity: 0; transform: translate(10px, -40px) scale(1.8); } }
+  .sc-flag { transform-box: fill-box; transform-origin: 0 50%; animation: flag 1.6s ease-in-out infinite; }
+  @keyframes flag { 50% { transform: scaleX(.8) skewY(4deg); } }
+  .sc-boat { transform-box: fill-box; transform-origin: center; animation: bob 3s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(1.5px) rotate(1deg); } }
+  .sc-fish { opacity: 0; transform-box: fill-box; transform-origin: center; animation: fish-jump 5.5s ease-in-out infinite; }
+  @keyframes fish-jump {
+    0% { opacity: 0; transform: translate(0, 0) rotate(-40deg); }
+    3% { opacity: 1; }
+    12% { transform: translate(16px, -34px) rotate(0); }
+    22% { opacity: 1; transform: translate(32px, 0) rotate(40deg); }
+    24%, 100% { opacity: 0; transform: translate(32px, 4px) rotate(40deg); }
+  }
+  .preview * { animation: none !important; }
+  .preview .sc-fish, .preview .sc-smoke { opacity: .9; }
+  .shop-title { margin-bottom: 4px; }
+  .shop { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin: 14px 0 32px; }
+  .shop-item { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .shop-item .preview { display: block; width: 100%; height: 84px; background: #eef5ee; border-radius: 8px; }
+  .shop-item.locked .preview { filter: grayscale(1); opacity: .5; }
+  .shop-name { font-weight: 600; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .dots { display: flex; gap: 4px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+  .dot.on { background: #e0a800; }
+  .shop-desc { font-size: .88rem; flex: 1; }
+  .shop-item button { width: 100%; }
+  .reset { text-align: center; }
+  .link-btn { background: none; border-color: transparent; color: var(--muted); font-size: .85rem; text-decoration: underline; text-underline-offset: 3px; }
+  .link-btn:hover { color: var(--error); border-color: transparent; }
+  #reset-confirm { background: var(--error-soft); border-radius: 12px; padding: 16px; max-width: 540px; margin: 0 auto; }
+  #reset-confirm p { margin: 0 0 12px; }
+  button.danger { background: var(--error); border-color: var(--error); color: #fff; }
 
   @media (max-width: 560px) {
     .view { padding-top: 20px; }
@@ -261,6 +325,7 @@
     <button id="sample" type="button">mintafeladat</button>
     <div id="load-error" class="error-msg" role="alert"></div>
   </div>
+  <button type="button" class="family-btn" data-family>Vidracsalád · <span class="coin"></span> <span class="gold-count">0</span></button>
 </section>
 
 <!-- 2. Feladatválasztó -->
@@ -270,6 +335,7 @@
       <h1>Feladatok</h1>
       <div id="file-name" class="file-name muted"></div>
     </div>
+    <button type="button" class="family-btn" data-family>Vidracsalád · <span class="coin"></span> <span class="gold-count">0</span></button>
     <button id="other-file" type="button">Másik fájl</button>
   </div>
   <input id="search" type="search" placeholder="Keresés címre vagy számra (pl. vessző, 1.15)" autocomplete="off">
@@ -289,6 +355,7 @@
   <div class="stats">
     <span class="stat">Idő: <b id="st-time">0:00</b></span>
     <span class="stat err">Hibák: <b id="st-errors">0</b></span>
+    <span class="stat gold" id="st-gold-box"><span class="coin"></span> Arany: <b id="st-gold">0</b></span>
     <div class="progress" aria-hidden="true"><div id="st-progress"></div></div>
   </div>
   <div class="card type-card">
@@ -311,12 +378,34 @@
       <div class="metric"><div class="v" id="res-kpm"></div><div class="l">leütés/perc</div></div>
       <div class="metric"><div class="v" id="res-acc"></div><div class="l" id="res-acc-label">pontosság</div></div>
       <div class="metric" id="res-acc-full-box" hidden><div class="v" id="res-acc-full"></div><div class="l">pontosság a teljes szövegre</div></div>
+      <div class="metric" id="res-gold-box"><div class="v"><span class="coin"></span> +<span id="res-gold"></span></div><div class="l">arany</div></div>
     </div>
     <div class="missed" id="res-missed"></div>
     <div class="actions">
       <button id="res-next" class="primary" type="button">Következő feladat</button>
       <button id="res-again" type="button">Újra</button>
       <button id="res-list" type="button">Vissza a listához</button>
+    </div>
+  </div>
+</section>
+
+<!-- 5. Vidracsalád -->
+<section id="view-family" class="view">
+  <div class="list-head">
+    <button id="family-back" type="button">← Vissza</button>
+    <h1 class="grow">Vidracsalád</h1>
+    <span class="gold-pill"><span class="coin"></span> <b class="gold-count">0</b> arany</span>
+  </div>
+  <div id="scene" class="scene"></div>
+  <h2 class="shop-title">Bolt</h2>
+  <div class="muted">Minden hibátlanul begépelt sorért jár egy arany. Minden tárgy három szintig fejleszthető.</div>
+  <div id="shop" class="shop"></div>
+  <div class="reset">
+    <button id="reset" type="button" class="link-btn">Mindent nulláz</button>
+    <div id="reset-confirm" hidden>
+      <p>Biztosan nullázol? Ez törli az összes aranyat <b>és a teljes vidracsaládot</b> (minden megvett tárgyat és fejlesztést). Nem vonható vissza.</p>
+      <button id="reset-yes" type="button" class="danger">Igen, mindent törlök</button>
+      <button id="reset-no" type="button">Mégse</button>
     </div>
   </div>
 </section>
@@ -400,18 +489,20 @@ document.querySelectorAll('[data-otter]').forEach((slot) => {
 const typeOtter = document.querySelector('#view-type .otter');
 const resultOtter = document.querySelector('#view-result .otter');
 
+// Rövid, egyszeri pózok (ijedtség, aranyelrakás), amelyek a mód váltását túlélik
+const PULSES = ['oops', 'stash'];
 function setOtterMode(svg, mode) {
-  const oops = svg.classList.contains('oops');
-  svg.setAttribute('class', `otter ${mode}${oops ? ' oops' : ''}`);
+  const keep = PULSES.filter((c) => svg.classList.contains(c));
+  svg.setAttribute('class', ['otter', mode, ...keep].join(' '));
 }
 
-let oopsTimer = null;
-function otterOops(svg) {
-  svg.classList.remove('oops');
+const pulseTimers = {};
+function otterPulse(svg, cls, ms) {
+  svg.classList.remove(cls);
   void svg.getBoundingClientRect();
-  svg.classList.add('oops');
-  clearTimeout(oopsTimer);
-  oopsTimer = setTimeout(() => svg.classList.remove('oops'), 650);
+  svg.classList.add(cls);
+  clearTimeout(pulseTimers[cls]);
+  pulseTimers[cls] = setTimeout(() => svg.classList.remove(cls), ms);
 }
 
 // Pontosságfüggő tánc: 10% alatt semmi, onnan 10%-os sávonként egyre hosszabb,
@@ -481,10 +572,12 @@ function otterDance(svg, level) {
 }
 
 const CONFETTI_COLORS = ['#e4572e', '#f3a712', '#29bf12', '#2e86de', '#a23b72', '#ff6fb5'];
-function otterBurst(slot, kind, n) {
+/** Csillám/konfetti a slot közepéből, vagy az `at` ({ x, y } px, a slothoz képest) pontból. */
+function otterBurst(slot, kind, n, at) {
   for (let i = 0; i < n; i++) {
     const el = document.createElement('span');
     el.className = `burst ${kind}`;
+    if (at) { el.style.left = `${at.x}px`; el.style.top = `${at.y}px`; }
     const color = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
     if (kind === 'spark') { el.textContent = '✦'; el.style.color = color; } else el.style.background = color;
     slot.appendChild(el);
@@ -647,6 +740,31 @@ function matches(expected, typed) {
   return typed === expected || (BLANKS.has(expected) && BLANKS.has(typed));
 }
 
+/**
+ * Az aranyhoz számolt „sorok”: [kezdet, vég) párok. Egy sor a sortörésig tart, azzal együtt;
+ * a 80 karakternél hosszabb sort szóhatáron kb. 60 karakteres darabokra vágjuk.
+ */
+function goldLines(text) {
+  const lines = [];
+  let s = 0;
+  while (s < text.length) {
+    const nl = text.indexOf('\n', s);
+    const lineEnd = nl < 0 ? text.length : nl;
+    let a = s;
+    while (lineEnd - a > 80) {
+      let cut = text.lastIndexOf(' ', a + 60);
+      if (cut <= a) cut = text.indexOf(' ', a + 60);
+      if (cut < 0 || cut >= lineEnd - 1) break;
+      lines.push([a, cut + 1]);
+      a = cut + 1;
+    }
+    const end = nl < 0 ? text.length : nl + 1;
+    lines.push([a, end]);
+    s = end;
+  }
+  return lines;
+}
+
 function startTask(id) {
   const item = collection.items.get(id);
   currentId = id;
@@ -664,7 +782,14 @@ function startTask(id) {
     pausedAt: null,           // a szünet kezdete, ha épp szünetel
     pausedTotal: 0,           // az eddigi szünetek hossza (ms)
     composing: false,
+    goldOn: !collection.sample,   // a mintafeladatért nem jár arany
+    lines: goldLines(item.text),
+    lineOf: [],               // karakterpozíció -> sor indexe
+    lineBad: [],              // volt-e hibás leütés a sorban (javítva is számít)
+    linePaid: [],             // kifizettük-e már a sort
+    gold: 0,                  // ebben a feladatban szerzett arany
   };
+  st.lines.forEach(([a, b], i) => { for (let k = a; k < b; k++) st.lineOf[k] = i; });
 
   $('task-num').textContent = item.number;
   $('task-title').textContent = item.title;
@@ -674,6 +799,8 @@ function startTask(id) {
   input.maxLength = st.target.length;
   renderPause();
   updateStats();
+  $('st-gold-box').hidden = !st.goldOn;
+  showGold(false);
   setOtterMode(typeOtter, 'idle');
   showView('type');
   pattern.scrollTop = 0;
@@ -749,6 +876,12 @@ function onInput() {
       st.missCounts[expected] = (st.missCounts[expected] || 0) + 1;
       hadError = true;
     }
+    const line = st.lineOf[pos];
+    if (!good) st.lineBad[line] = true;
+    if (st.goldOn && pos === st.lines[line][1] - 1 && !st.lineBad[line] && !st.linePaid[line]) {
+      st.linePaid[line] = true;
+      earnGold(pos);
+    }
   }
   st.typed = val;
 
@@ -762,7 +895,7 @@ function onInput() {
   scrollToCurrent();
   if (added.length) input.scrollTop = input.scrollHeight;
 
-  if (hadError) otterOops(typeOtter);
+  if (hadError) otterPulse(typeOtter, 'oops', 650);
   setOtterMode(typeOtter, 'typing');
   clearTimeout(idleTimer);
   idleTimer = setTimeout(() => setOtterMode(typeOtter, 'idle'), 1800);
@@ -897,6 +1030,8 @@ function finish() {
   $('res-acc-label').textContent = complete ? 'pontosság' : 'pontosság a begépelt részen';
   $('res-acc-full').textContent = `${accFull}%`;
   $('res-acc-full-box').hidden = complete;
+  $('res-gold').textContent = st.gold;
+  $('res-gold-box').hidden = !st.goldOn;
 
   const missed = Object.entries(st.missCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
   $('res-missed').innerHTML = missed.length
@@ -919,6 +1054,299 @@ function finish() {
 $('res-next').addEventListener('click', () => { const id = nextTaskId(); if (id) startTask(id); });
 $('res-again').addEventListener('click', () => startTask(currentId));
 $('res-list').addEventListener('click', backToList);
+
+// ---------- Arany és vidracsalád ----------
+
+// A bolt kínálata. Minden tárgy három szintig vehető; a `needs` tárgyból előbb kell legalább egy szint.
+const SHOP = [
+  { id: 'pebbles', name: 'Kavicsok', prices: [1, 2, 3], levels: ['Három kavics', 'Kavicshalom', 'Kavicsok kagylókkal'], box: '540 228 100 32' },
+  { id: 'flowers', name: 'Virágok', prices: [1, 2, 3], levels: ['Pár szál virág', 'Virágcsokor', 'Virágmező'], box: '0 216 270 46' },
+  { id: 'reeds', name: 'Nádas', prices: [2, 3, 5], levels: ['Nádcsomó', 'Sűrű nádas', 'Nádas gyékénnyel'], box: '388 140 66 72' },
+  { id: 'pond', name: 'Tó', prices: [2, 4, 8], levels: ['Tócsa', 'Tó', 'Tó tavirózsával'], box: '400 170 220 70' },
+  { id: 'fish', name: 'Hal', prices: [5, 10, 20], needs: 'pond', levels: ['Egy hal', 'Két hal', 'Aranyhal is'], box: '440 170 120 50' },
+  { id: 'tree', name: 'Fa', prices: [8, 17, 33], levels: ['Csemete', 'Fa', 'Almafa'], box: '8 50 124 142' },
+  { id: 'boat', name: 'Csónak', prices: [13, 25, 50], needs: 'pond', levels: ['Tutaj', 'Csónak', 'Vitorlás'], box: '470 146 110 72' },
+  { id: 'house', name: 'Vidravár', prices: [17, 33, 67], needs: 'reeds', levels: ['Kunyhó', 'Ház', 'Ház zászlóval'], box: '140 68 120 126' },
+  { id: 'otters', name: 'Új vidra', prices: [13, 21, 33], needs: 'house', levels: ['Egy kis vidra', 'Két kis vidra', 'Három kis vidra'], box: '100 170 364 72' },
+  { id: 'sky', name: 'Égbolt', prices: [25, 50, 100], levels: ['Nap', 'Nap és felhők', 'Csillagos éjszaka'], box: '0 0 640 180' },
+];
+const SHOP_BY_ID = Object.fromEntries(SHOP.map((it) => [it.id, it]));
+
+// Tárolás: egy közös pénztárca a böngészőben. Ha a tárolás nem elérhető, csak a munkamenet végéig él.
+const SAVE_KEY = 'typeUp.v1';
+function loadSave() {
+  const save = { gold: 0, items: {} };
+  try {
+    const raw = JSON.parse(localStorage.getItem(SAVE_KEY));
+    if (!raw || typeof raw !== 'object') return save;
+    if (Number.isInteger(raw.gold) && raw.gold > 0) save.gold = raw.gold;
+    for (const it of SHOP) {
+      const l = raw.items && raw.items[it.id];
+      if (Number.isInteger(l) && l > 0) save.items[it.id] = Math.min(l, 3);
+    }
+  } catch { /* üres pénztárcával indulunk */ }
+  return save;
+}
+function persist() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch { /* nincs tárolás */ }
+}
+let save = loadSave();
+
+// ----- Arany gépelés közben -----
+
+let coinsInFlight = 0;
+
+/** A kijelzők a pénztárcát mutatják, a még repülő érméket leszámítva. */
+function showGold(bump) {
+  const shown = save.gold - coinsInFlight;
+  $('st-gold').textContent = shown;
+  document.querySelectorAll('.gold-count').forEach((el) => { el.textContent = save.gold; });
+  if (bump) {
+    const b = $('st-gold');
+    b.classList.remove('bump');
+    void b.offsetWidth;
+    b.classList.add('bump');
+  }
+}
+
+function earnGold(pos) {
+  st.gold++;
+  save.gold++;
+  persist();
+  // Az utolsó sornál azonnal jön az eredmény, ott nem repül érme.
+  if (pos === st.target.length - 1) { showGold(false); return; }
+  flyCoin(spans[pos]);
+}
+
+/** Érme ív mentén a sor végétől a vidráig; érkezéskor a vidra elrakja, a számláló nő. */
+function flyCoin(fromEl) {
+  const a = fromEl.getBoundingClientRect();
+  const box = pattern.getBoundingClientRect();
+  const b = typeOtter.getBoundingClientRect();
+  const x0 = a.right - 9;
+  const y0 = Math.min(Math.max(a.top + a.height / 2, box.top + 9), box.bottom - 9) - 9;
+  const x1 = b.left + b.width / 2 - 9;
+  const y1 = b.top + b.height * 0.6 - 9;
+  const lift = Math.min(y0, y1) - 60;
+  const coin = document.createElement('span');
+  coin.className = 'coin fly';
+  document.body.appendChild(coin);
+  coinsInFlight++;
+  coin.animate([
+    { transform: `translate(${x0}px, ${y0}px) scale(.6)`, opacity: 0 },
+    { transform: `translate(${x0}px, ${y0 - 14}px) scale(1.15)`, opacity: 1, offset: 0.15 },
+    { transform: `translate(${(x0 + x1) / 2}px, ${lift}px) scale(1)`, offset: 0.55 },
+    { transform: `translate(${x1}px, ${y1}px) scale(.5)`, opacity: 1 },
+  ], { duration: 800, easing: 'ease-in-out' }).onfinish = () => {
+    coin.remove();
+    coinsInFlight--;
+    showGold(true);
+    otterPulse(typeOtter, 'stash', 500);
+  };
+}
+
+// ----- A jelenet (640×260) -----
+
+const otterMarkup = otterTpl.innerHTML.trim();
+const otterSvg = (x, y, w, extra = '') => otterMarkup.replace('<svg ', `<svg x="${x}" y="${y}" width="${w}" height="${w}" ${extra} `);
+
+const SKY_BG = '<rect width="640" height="260" fill="#e6f2f4"/>';
+const GROUND = '<path d="M0 176 Q120 164 250 172 T480 170 T640 168 V260 H0 Z" fill="#d3e4b8"/>';
+const GROUND_FRONT = '<path d="M0 244 Q160 236 330 246 T640 242 V260 H0 Z" fill="#c2d8a2"/>';
+const FLOWER_COLORS = ['#e4572e', '#f3a712', '#ff6fb5', '#a23b72', '#2e86de'];
+const OTTER_SPOTS = [[200, 176, 62], [402, 186, 54], [108, 190, 50]];
+
+const cloud = (x, y, s) => `<g transform="translate(${x} ${y}) scale(${s})"><g class="sc-cloud">`
+  + '<ellipse cx="0" cy="10" rx="38" ry="12" fill="#fff"/><ellipse cx="-12" cy="2" rx="16" ry="12" fill="#fff"/>'
+  + '<ellipse cx="10" cy="-2" rx="20" ry="15" fill="#fff"/></g></g>';
+const reed = (x, h, cat) => `<path d="M${x} 208 Q${x - 3} ${208 - h / 2} ${x + 2} ${208 - h}" stroke="#6f9a4a" stroke-width="3" fill="none" stroke-linecap="round"/>`
+  + (cat ? `<ellipse cx="${x + 1.5}" cy="${218 - h}" rx="3.2" ry="8" fill="#7a5232"/>` : '');
+const flower = (x, y, c) => `<g class="sc-sway" style="animation-delay:-${(x % 7) * 0.5}s"><path d="M${x} ${y + 14} V${y}" stroke="#6f9a4a" stroke-width="2"/>`
+  + [0, 72, 144, 216, 288].map((d) => {
+    const r = (d * Math.PI) / 180;
+    return `<circle cx="${(x + Math.cos(r) * 3.6).toFixed(1)}" cy="${(y + Math.sin(r) * 3.6).toFixed(1)}" r="3" fill="${c}"/>`;
+  }).join('')
+  + `<circle cx="${x}" cy="${y}" r="2.2" fill="#ffd66b"/></g>`;
+const fishSvg = (x, color, delay) => `<g class="sc-fish" style="animation-delay:${delay}s"><ellipse cx="${x}" cy="200" rx="8" ry="4" fill="${color}"/>`
+  + `<path d="M${x - 7} 200 l-6 -4 v8 Z" fill="${color}"/><circle cx="${x + 4}" cy="199" r="1" fill="#2b1d14"/></g>`;
+const shell = (x, y) => `<path d="M${x - 6} ${y} Q${x} ${y - 11} ${x + 6} ${y} Z" fill="#f2b8a2"/>`
+  + `<path d="M${x} ${y} V${y - 7} M${x} ${y} L${x - 3} ${y - 6} M${x} ${y} L${x + 3} ${y - 6}" stroke="#d98f7a" stroke-width="1"/>`;
+
+// Tárgyanként a rajz az adott szinten (1–3)
+const DRAW = {
+  sky(l) {
+    if (l === 3) {
+      const stars = [[40, 30], [110, 60], [170, 22], [240, 48], [300, 18], [360, 55], [430, 28], [480, 62], [520, 20], [620, 96], [80, 100], [390, 95], [270, 110]]
+        .map(([x, y], i) => `<circle class="sc-star" cx="${x}" cy="${y}" r="${i % 3 ? 1.4 : 2}" fill="#fff6d0" style="animation-delay:-${(i * 0.37) % 2}s"/>`).join('');
+      return `<rect width="640" height="180" fill="#2c3a5c"/>${stars}<circle cx="585" cy="48" r="20" fill="#f6efcf"/><circle cx="594" cy="41" r="17" fill="#2c3a5c"/>`;
+    }
+    const sun = '<circle cx="585" cy="48" r="32" fill="#ffe9a8" opacity=".6"/><circle cx="585" cy="48" r="22" fill="#ffcf4d"/>';
+    return l === 1 ? sun : sun + cloud(110, 45, 1) + cloud(380, 30, 0.8);
+  },
+  tree(l) {
+    if (l === 1) return '<rect x="67" y="150" width="6" height="38" rx="2" fill="#7a5232"/><ellipse cx="70" cy="146" rx="15" ry="18" fill="#7fb069"/><ellipse cx="65" cy="141" rx="6" ry="7" fill="#93c27d"/>';
+    const t = '<path d="M62 188 L65 120 H75 L78 188 Z" fill="#7a5232"/><circle cx="46" cy="112" r="26" fill="#6ea35c"/><circle cx="96" cy="110" r="28" fill="#6ea35c"/>'
+      + '<circle cx="70" cy="92" r="36" fill="#7fb069"/><circle cx="58" cy="82" r="12" fill="#93c27d"/>';
+    if (l === 2) return t;
+    return t + [[52, 96], [82, 84], [92, 112], [44, 118], [70, 108], [104, 96]]
+      .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="4.5" fill="#d9483b"/><circle cx="${x - 1.5}" cy="${y - 1.5}" r="1.3" fill="#f59a8f"/>`).join('');
+  },
+  house(l) {
+    if (l === 1) {
+      return '<path d="M150 190 Q200 118 250 190 Z" fill="#9c6b43"/><g stroke="#7a5232" stroke-width="2" stroke-linecap="round">'
+        + '<path d="M165 180 L190 140"/><path d="M235 180 L210 140"/><path d="M178 188 L200 132"/><path d="M160 170 L240 172"/></g>'
+        + '<path d="M186 190 V178 A14 14 0 0 1 214 178 V190 Z" fill="#3b2a1d"/>';
+    }
+    const win = (x) => `<rect x="${x}" y="150" width="15" height="15" rx="2" fill="#fbe7a1" stroke="#9c6b43" stroke-width="2"/>`;
+    const h = (l === 3 ? '<rect x="222" y="106" width="11" height="26" fill="#8b4a36"/>' : '')
+      + '<rect x="158" y="136" width="84" height="54" fill="#e2c49c"/><path d="M148 140 L200 102 L252 140 Z" fill="#b5523b"/>'
+      + `<path d="M190 190 V166 A10 10 0 0 1 210 166 V190 Z" fill="#6b4428"/>${win(167)}${win(218)}`;
+    if (l === 2) return h;
+    return h + '<line x1="200" y1="102" x2="200" y2="74" stroke="#5c3d27" stroke-width="2"/><path class="sc-flag" d="M200 75 L222 81 L200 88 Z" fill="#3a8f89"/>'
+      + [0, 1, 2].map((i) => `<circle class="sc-smoke" cx="227" cy="100" r="${5 + i}" fill="#d8d4cc" style="animation-delay:-${i * 1.2}s"/>`).join('');
+  },
+  pond(l) {
+    const [rx, ry] = l === 1 ? [48, 13] : [100, 27];
+    let s = `<ellipse cx="510" cy="206" rx="${rx + 4}" ry="${ry + 3}" fill="#b9cf9c"/><ellipse cx="510" cy="206" rx="${rx}" ry="${ry}" fill="#8fcadb"/>`
+      + `<ellipse cx="${510 - rx * 0.25}" cy="${206 - ry * 0.35}" rx="${rx * 0.4}" ry="${ry * 0.18}" fill="#b8e1ea"/>`;
+    if (l === 3) {
+      s += [[462, 210], [548, 216], [578, 199]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="10" ry="4" fill="#6ea35c"/>`).join('')
+        + '<circle cx="548" cy="213" r="3.5" fill="#f4a6c6"/><circle cx="462" cy="207" r="3" fill="#fff"/>';
+    }
+    return s;
+  },
+  fish: (l) => [fishSvg(480, '#6d8fa8', 0), l >= 2 && fishSvg(505, '#7d9bb0', -2.1), l >= 3 && fishSvg(460, '#f2a33a', -3.7)].filter(Boolean).join(''),
+  boat(l) {
+    if (l === 1) return '<g class="sc-boat"><rect x="505" y="198" width="40" height="8" rx="3" fill="#9c6b43"/><path d="M515 198 v8 M525 198 v8 M535 198 v8" stroke="#7a5232" stroke-width="1.5"/></g>';
+    const sail = l === 3 ? '<line x1="525" y1="196" x2="525" y2="152" stroke="#5c3d27" stroke-width="2"/><path d="M527 155 L550 192 H527 Z" fill="#fff" stroke="#e6e1d8"/><path d="M525 152 l10 3 l-10 3 Z" fill="#3a8f89"/>' : '';
+    return `<g class="sc-boat">${sail}<path d="M497 196 H553 Q547 212 537 212 H513 Q503 212 497 196 Z" fill="#b5523b"/>`
+      + '<path d="M497 196 H553" stroke="#8b3a2a" stroke-width="3" stroke-linecap="round"/></g>';
+  },
+  reeds(l) {
+    const list = l === 1 ? [[412, 40], [420, 52], [428, 36]] : [[400, 34], [406, 50], [413, 42], [420, 58], [427, 46], [434, 54], [441, 36]];
+    return `<g class="sc-sway">${list.map(([x, h], i) => reed(x, h, l === 3 && i % 2 === 1)).join('')}</g>`;
+  },
+  otters: (l) => OTTER_SPOTS.slice(0, l).map(([x, y, w]) => otterSvg(x, y, w)).join(''),
+  flowers(l) {
+    let spots = [[28, 232], [46, 238], [62, 230]];
+    if (l >= 2) spots = spots.concat([[16, 240], [80, 236], [96, 242], [38, 224]]);
+    if (l >= 3) spots = spots.concat([[112, 234], [130, 240], [150, 232], [170, 240], [190, 234], [240, 236], [258, 242], [226, 246], [8, 228], [140, 246]]);
+    return spots.map(([x, y], i) => flower(x, y, FLOWER_COLORS[i % FLOWER_COLORS.length])).join('');
+  },
+  pebbles(l) {
+    const p = [[580, 250, 7, 4.5, '#a9a39a'], [592, 247, 5, 3.5, '#c2bcb2'], [570, 247, 4, 3, '#bdb6aa']];
+    if (l >= 2) p.push([606, 251, 6, 4, '#b3ac9f'], [618, 246, 4, 3, '#a9a39a'], [560, 252, 5, 3.2, '#c7c1b6']);
+    return p.map(([x, y, rx, ry, c]) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="${c}"/>`).join('')
+      + (l === 3 ? shell(628, 254) + shell(548, 251) : '');
+  },
+};
+
+const level = (id) => save.items[id] || 0;
+let sceneOtter = null;
+
+function renderScene() {
+  const layer = (id) => (level(id) ? `<g data-item="${id}">${DRAW[id](level(id))}</g>` : '');
+  $('scene').innerHTML = `<svg viewBox="0 0 640 260" role="img" aria-label="A vidracsalád otthona">${SKY_BG}${layer('sky')}${GROUND}`
+    + ['tree', 'house', 'pond', 'fish', 'boat', 'reeds', 'otters'].map(layer).join('')
+    + otterSvg(275, 128, 110, 'data-main') + GROUND_FRONT + layer('flowers') + layer('pebbles') + '</svg>';
+  sceneOtter = $('scene').querySelector('[data-main]');
+}
+
+// ----- Bolt -----
+
+function preview(it, l) {
+  const under = it.id === 'sky' ? SKY_BG : it.needs === 'pond' ? DRAW.pond(2) : '';
+  return `<svg class="preview" viewBox="${it.box}" aria-hidden="true">${under}${DRAW[it.id](l)}</svg>`;
+}
+
+function renderShop() {
+  $('shop').innerHTML = SHOP.map((it) => {
+    const l = level(it.id);
+    const max = l >= 3;
+    const locked = !max && it.needs && !level(it.needs);
+    const price = max ? 0 : it.prices[l];
+    let btn;
+    if (max) btn = '<button type="button" disabled>Kész ✓</button>';
+    else if (locked) btn = `<button type="button" disabled>Előbb kell: ${esc(SHOP_BY_ID[it.needs].name)}</button>`;
+    else if (save.gold < price) btn = `<button type="button" disabled><span class="coin"></span> ${price} · még ${price - save.gold} kell</button>`;
+    else btn = `<button type="button" class="primary" data-buy="${it.id}">${l ? 'Fejlesztés' : 'Megveszem'} · <span class="coin"></span> ${price}</button>`;
+    const dots = [1, 2, 3].map((i) => `<span class="dot${i <= l ? ' on' : ''}"></span>`).join('');
+    const desc = max ? it.levels[2] : `${l + 1}. szint: ${it.levels[l]}`;
+    return `<div class="shop-item${locked ? ' locked' : ''}" data-tile="${it.id}">${preview(it, max ? 3 : l + 1)}`
+      + `<div class="shop-name">${esc(it.name)}<span class="dots" title="${l}/3 szint">${dots}</span></div>`
+      + `<div class="shop-desc muted">${esc(desc)}</div>${btn}</div>`;
+  }).join('');
+}
+
+function renderFamily() {
+  renderScene();
+  renderShop();
+  showGold(false);
+}
+
+function buy(id) {
+  const it = SHOP_BY_ID[id];
+  const l = level(id);
+  if (l >= 3 || (it.needs && !level(it.needs)) || save.gold < it.prices[l]) return;
+  save.gold -= it.prices[l];
+  save.items[id] = l + 1;
+  persist();
+  renderFamily();
+  const btn = $('shop').querySelector(`[data-tile="${id}"] button`);
+  if (btn) btn.focus({ preventScroll: true });
+
+  // Az új tárgy „kipattan”, csillámot szór, a vidra örül.
+  const g = $('scene').querySelector(`[data-item="${id}"]`);
+  g.animate(id === 'sky'
+    ? [{ opacity: 0 }, { opacity: 1 }]
+    : [{ transform: 'scale(.5)', opacity: 0 }, { transform: 'scale(1.1)', opacity: 1, offset: 0.6 }, { transform: 'scale(1)' }],
+  { duration: 550, easing: 'ease-out' });
+  const r = g.getBoundingClientRect();
+  const sr = $('scene').getBoundingClientRect();
+  otterBurst($('scene'), 'spark', 12, { x: r.left + r.width / 2 - sr.left, y: r.top + r.height / 2 - sr.top });
+  otterDance(sceneOtter, 4);
+}
+
+// ----- Nézet, nullázás -----
+
+let familyFrom = 'load';
+function openFamily() {
+  familyFrom = document.querySelector('.view.active').id.replace('view-', '');
+  showResetConfirm(false);
+  renderFamily();
+  showView('family');
+  window.scrollTo(0, 0);
+}
+
+function showResetConfirm(on) {
+  $('reset-confirm').hidden = !on;
+  $('reset').hidden = on;
+}
+
+document.querySelectorAll('[data-family]').forEach((b) => b.addEventListener('click', openFamily));
+$('family-back').addEventListener('click', () => showView(familyFrom));
+$('shop').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-buy]');
+  if (b) buy(b.dataset.buy);
+});
+$('scene').addEventListener('click', (e) => {
+  if (e.target.closest('[data-main]')) otterDance(sceneOtter, 6);
+});
+$('reset').addEventListener('click', () => { showResetConfirm(true); $('reset-no').focus(); });
+$('reset-no').addEventListener('click', () => showResetConfirm(false));
+$('reset-yes').addEventListener('click', () => {
+  save = { gold: 0, items: {} };
+  persist();
+  showResetConfirm(false);
+  renderFamily();
+});
+// Másik lapon történt változás (pl. két nyitott ablak)
+window.addEventListener('storage', (e) => {
+  if (e.key !== SAVE_KEY) return;
+  save = loadSave();
+  if ($('view-family').classList.contains('active')) renderFamily(); else showGold(false);
+});
+showGold(false);
 </script>
 </body>
 </html>

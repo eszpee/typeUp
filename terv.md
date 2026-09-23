@@ -11,7 +11,8 @@ Első körben TDD nélkül készül, a tesztelés Chrome DevTools MCP-vel tört�
 ## Egyeztetett döntések
 
 - **Egy fájl:** `/Users/eszpee/projects/typeUp/index.html`, beágyazott CSS és JS, külső függőség nélkül.
-- **Adatforrás:** a felhasználó minden indításkor maga tölti be az XML-t (fájlválasztó és húzás). Nincs localStorage.
+- **Adatforrás:** a felhasználó minden indításkor maga tölti be az XML-t (fájlválasztó és húzás). A böngészőben
+  (localStorage) csak az aranyak és a vidracsalád tárolódik, lásd lent.
 - **Feladatválasztó:** lenyitható fa az XML-hierarchia szerint, hierarchikus számozással (pl. `1.15.2`),
   keresőmezővel, amely címre és számra is szűr.
 - **Gépelési mód:** csak Copy (fent a minta, lent a beviteli mező). A `RecommendedTypingMode` és a `CanEdit` értékét figyelmen kívül hagyjuk; a backspace mindenhol működik.
@@ -70,6 +71,40 @@ Első körben TDD nélkül készül, a tesztelés Chrome DevTools MCP-vel tört�
 Semleges háttér (törtfehér), egy kiemelő szín (a vidra barnája vagy egy csendes türkiz), piros csak
 a hibákhoz. Rendszerbetűtípus, a mintához monospace. Tágas térközök és lekerekített kártyák.
 Asztali gépre készül, de keskeny ablakban se törjön szét.
+
+## Aranyak és vidracsalád (#4)
+
+- **Sor:** a sortörésig tartó rész, a sortöréssel együtt. A 80 karakternél hosszabb sort szóhatáron kb.
+  60 karakteres darabokra vágjuk (`goldLines`), így az egysoros próza is rendszeresen ad aranyat, és az
+  eredmény nem függ az ablak szélességétől.
+- **Hibátlan (szigorú):** a sorban egyetlen hibás leütés sem volt, a kijavított hiba is számít.
+- **Kifizetés:** a sor utolsó karakterének (a sorvégi Enternek) leütésekor azonnal jár 1 arany, és az
+  arany Befejezésnél, Újrakezdésnél vagy kilépésnél is megmarad. Egy sor feladatonként egyszer fizet,
+  visszatörlés és újragépelés után sem jár érte újra arany. Ugyanaz a feladat újra megoldva ismét ad aranyat.
+- **Mintafeladat:** nem ad aranyat, a számláló nem is látszik.
+- **Gépelés közben:** a sor végéből egy érme repül a vidrához, a vidra elrakja (`stash` póz), a statisztika-sáv
+  „Arany” számlálója (a teljes pénztárca) ekkor nő. Az eredményképernyőn „+N arany” látszik.
+- **Vidracsalád nézet:** a főoldalról és a feladatlistáról a „Vidracsalád” gombbal érhető el, a „Vissza” oda visz,
+  ahonnan jöttünk. Fent egy SVG-jelenet a vidrával és a megvett tárgyakkal, alatta a bolt.
+- **Bolt:** tárgyanként 3 szint (vásárlás + 2 fejlesztés), egyre drágábban, a magasabb szint többet/szebbet ad.
+  A függő tárgyhoz a feltétel tárgyból legalább egy szint kell.
+
+  | Tárgy | 1. | 2. | 3. | Függőség |
+  |---|---|---|---|---|
+  | Kavicsok | 1 | 2 | 3 | – |
+  | Virágok | 1 | 2 | 3 | – |
+  | Nádas | 2 | 3 | 5 | – |
+  | Tó | 2 | 4 | 8 | – |
+  | Hal | 5 | 10 | 20 | Tó |
+  | Fa | 8 | 17 | 33 | – |
+  | Csónak | 13 | 25 | 50 | Tó |
+  | Vidravár | 17 | 33 | 67 | Nádas |
+  | Új vidra | 13 | 21 | 33 | Vidravár |
+  | Égbolt | 25 | 50 | 100 | – |
+
+- **Tárolás:** localStorage, `typeUp.v1` kulcs, `{ gold, items: { id: szint } }`, egyetlen közös pénztárca.
+  A felhasználónkénti szétválasztás a #8 (Felhasználókezelés) feladata.
+- **Nullázás:** a családnézet alján kétlépéses gomb; a megerősítés kiírja, hogy az aranyakat és a vidracsaládot is törli.
 
 ## Ellenőrzés (Chrome DevTools MCP)
 
