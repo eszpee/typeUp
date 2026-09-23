@@ -334,10 +334,8 @@ function parseCollection(xmlText) {
       const sub = [...el.children].find((c) => c.tagName === 'Items');
       if (sub) item.children = [...sub.children].filter((c) => c.tagName === 'ItemLink').map((c) => c.getAttribute('Id'));
     } else {
-      const rules = [...el.children].find((c) => c.tagName === 'Rules');
       const textEl = [...el.children].find((c) => c.tagName === 'TaskText');
       item.text = (textEl ? textEl.textContent : '').replace(/\r\n?/g, '\n');
-      item.enterRequired = !rules || rules.getAttribute('IsEnterRequiredOnLineEnds') !== 'False';
       item.disabled = item.text.length === 0;
     }
     items.set(id, item);
@@ -530,9 +528,11 @@ let spans = [];
 let timerId = null;
 let idleTimer = null;
 
-/** Elfogadható-e a leütött karakter a várt helyén. Ha nem kell Enter, sorvégen a szóköz is jó. */
+const BLANKS = new Set([' ', '\n']);
+
+/** Elfogadható-e a leütött karakter a várt helyén. Az Enter és a szóköz felcserélhető. */
 function matches(expected, typed) {
-  return typed === expected || (expected === '\n' && typed === ' ' && !st.enterRequired);
+  return typed === expected || (BLANKS.has(expected) && BLANKS.has(typed));
 }
 
 function startTask(id) {
@@ -549,7 +549,6 @@ function startTask(id) {
     keystrokes: 0,
     startTime: null,
     endTime: null,
-    enterRequired: item.enterRequired,
     composing: false,
   };
 

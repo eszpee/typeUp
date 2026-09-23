@@ -17,7 +17,7 @@ Első körben TDD nélkül készül, a tesztelés Chrome DevTools MCP-vel tört�
 - **Gépelési mód:** csak Copy (fent a minta, lent a beviteli mező). A `RecommendedTypingMode` és a `CanEdit` értékét figyelmen kívül hagyjuk; a backspace mindenhol működik.
 - **Hibánál:** a karakter bekerül, pirosra vált, a felhasználó halad tovább vagy visszatöröl.
 - **Hibaszámlálás:** minden hibás leütés számít, akkor is, ha később kijavítja.
-- **Sorvégek:** ha `IsEnterRequiredOnLineEnds=True`, Enter kell; ha `False`, az Enter és a szóköz is elfogadott.
+- **Enter és szóköz:** felcserélhetők, bármelyik elfogadott a másik helyén (az `IsEnterRequiredOnLineEnds` beállítást nem vesszük figyelembe).
 - **Idő:** az első leütéssel indul, és az utolsó karakter beírásakor áll meg, akkor is, ha maradt benne hiba.
 - **Dolgozatok:** ugyanúgy működnek, mint a többi feladat (az `IsTaskVisibleBeforeStart` értékét nem használjuk).
 - **Gépelés közben látszik:** futó idő, hibák száma és egy vékony haladásjelző csík.
@@ -44,8 +44,8 @@ Első körben TDD nélkül készül, a tesztelés Chrome DevTools MCP-vel tört�
   számokat itt számolja ki. Az üres szövegű feladatot (234) letiltottként jelöli meg.
 - **`renderTree(filter)`:** a fa HTML-je `<details>`/`<summary>` elemekkel. Szűréskor a találatok
   őseit is megjeleníti és kinyitja.
-- **Gépelési állapot:** `target`, `typed`, `errors`, `missCounts{char:n}`, `keystrokes`, `startTime`, `enterRequired`.
-  - `matches(expected, typed)`: pontos egyezés, vagy `\n` elvárt karakternél szóköz is, ha nem kell Enter.
+- **Gépelési állapot:** `target`, `typed`, `errors`, `missCounts{char:n}`, `keystrokes`, `startTime`.
+  - `matches(expected, typed)`: pontos egyezés, vagy Enter és szóköz egymás helyett.
   - Az `input` eseménynél összehasonlítjuk az új értéket az előzővel. Ha a hossz nőtt, minden új
     karaktert kiértékelünk: hibánál `errors++` és `missCounts[expected]++`. Ha csökkent, az törlés,
     a számlálók maradnak. A `keystrokes` minden bevitt karakternél nő.
@@ -80,7 +80,7 @@ Asztali gépre készül, de keskeny ablakban se törjön szét.
    `evaluate_script`: a karakterek `done` állapotban, a számláló 0 hibát mutat.
 4. Hibás karakter beírása: piros jelölés, a hibaszám 1. Backspace (`press_key`) és javítás után
    a jelölés eltűnik, a hibaszám 1 marad.
-5. Sorvégen Enter kell (1.1). Egy dolgozatnál (240.x) a szóköz is elfogadott a sor végén.
+5. Sorvégen az Enter és a szóköz is elfogadott, és szóköz helyén az Enter is.
 6. Rövid feladat végiggépelése (pl. „vessző”, 215 karakter, `evaluate_script`-tel a textarea
    feltöltése és `input` esemény): az idő megáll, megjelenik az eredményképernyő, a vidra szaltót ugrik.
    A „Következő feladat” a következő fa-elemre lép.
