@@ -258,7 +258,7 @@
     <button id="pick" class="primary" type="button">Fájl kiválasztása</button>
     <div id="load-error" class="error-msg" role="alert"></div>
   </div>
-  <p id="version" class="version muted">v10</p>
+  <p id="version" class="version muted">v11</p>
 </section>
 
 <!-- 2. Feladatválasztó -->
@@ -306,7 +306,8 @@
       <div class="metric"><div class="v" id="res-time"></div><div class="l">idő</div></div>
       <div class="metric"><div class="v" id="res-errors"></div><div class="l">hiba</div></div>
       <div class="metric"><div class="v" id="res-kpm"></div><div class="l">leütés/perc</div></div>
-      <div class="metric"><div class="v" id="res-acc"></div><div class="l">pontosság</div></div>
+      <div class="metric"><div class="v" id="res-acc"></div><div class="l" id="res-acc-label">pontosság</div></div>
+      <div class="metric" id="res-acc-full-box" hidden><div class="v" id="res-acc-full"></div><div class="l">pontosság a teljes szövegre</div></div>
     </div>
     <div class="missed" id="res-missed"></div>
     <div class="actions">
@@ -862,10 +863,14 @@ function finish() {
   const ms = elapsed();
   const minutes = ms / 60000;
   const kpm = minutes > 0 ? Math.round(st.keystrokes / minutes) : 0;
-  const acc = st.keystrokes ? Math.round(((st.keystrokes - st.errors) / st.keystrokes) * 100) : 100;
+  const accRaw = st.keystrokes ? ((st.keystrokes - st.errors) / st.keystrokes) * 100 : 100;
+  const acc = Math.round(accRaw);
   const item = collection.items.get(currentId);
 
   const complete = st.typed.length === st.target.length;
+  // Félbehagyásnál a be nem gépelt rész is rontja: a begépelt rész pontossága
+  // szorozva a begépelt hányaddal. Ebből számol a vidratánc is.
+  const accFull = complete ? acc : Math.round(accRaw * st.typed.length / st.target.length);
   $('res-title').textContent = complete ? 'Kész!' : 'Befejezve';
   const partial = complete ? '' : ` · ${st.typed.length}/${st.target.length} karakter`;
   $('res-task').textContent = `${item.number} · ${item.title}${partial}`;
@@ -873,6 +878,9 @@ function finish() {
   $('res-errors').textContent = st.errors;
   $('res-kpm').textContent = kpm;
   $('res-acc').textContent = `${acc}%`;
+  $('res-acc-label').textContent = complete ? 'pontosság' : 'pontosság a begépelt részen';
+  $('res-acc-full').textContent = `${accFull}%`;
+  $('res-acc-full-box').hidden = complete;
 
   const missed = Object.entries(st.missCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
   $('res-missed').innerHTML = missed.length
@@ -885,8 +893,8 @@ function finish() {
   $('res-next').disabled = !next;
   showView('result');
   window.scrollTo(0, 0);
-  // 0–9: 10%-os sávok, 10: csak 100%-nál (a kerekített pontosság alapján)
-  lastDance = st.keystrokes ? Math.max(0, Math.floor(acc / 10)) : 0;
+  // 0–9: 10%-os sávok, 10: csak 100%-nál (a teljes szövegre vetített, kerekített pontosság alapján)
+  lastDance = st.keystrokes ? Math.max(0, Math.floor(accFull / 10)) : 0;
   otterDance(resultOtter, lastDance);
   const focusBtn = next ? $('res-next') : $('res-list');
   setTimeout(() => { if ($('view-result').classList.contains('active')) focusBtn.focus(); }, 1200);
