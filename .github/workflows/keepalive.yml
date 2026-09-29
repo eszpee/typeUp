@@ -1,0 +1,15 @@
+# Heti ébresztő: a Supabase a Free projektet 7 nap tétlenség után szünetelteti.
+# A ping() semmit nem ad ki; a két érték nyilvános (lásd index.html).
+name: keepalive
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    env:
+      SB_URL: https://ogkkptrpnsdduvhituav.supabase.co
+      SB_KEY: sb_publishable_P8qpqTp1Wu5QGjFFUEW3Og_7rIsrVd7
+    steps:
+      - run: curl -fsS -X POST "$SB_URL/rest/v1/rpc/ping" -H "apikey: $SB_KEY" -H "Content-Type: application/json" -d '{}'

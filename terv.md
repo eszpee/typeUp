@@ -10,9 +10,11 @@ Első körben TDD nélkül készül, a tesztelés Chrome DevTools MCP-vel tört�
 
 ## Egyeztetett döntések
 
-- **Egy fájl:** `/Users/eszpee/projects/typeUp/index.html`, beágyazott CSS és JS, külső függőség nélkül.
+- **Egy fájl:** `/Users/eszpee/projects/typeUp/index.html`, beágyazott CSS és JS. Egyetlen külső függőség a
+  `supabase-js` (a belépéshez, lásd #9).
 - **Adatforrás:** a felhasználó minden indításkor maga tölti be az XML-t (fájlválasztó és húzás). A böngészőben
-  (localStorage) csak az aranyak és a vidracsalád tárolódik, lásd lent.
+  (localStorage) csak az aranyak és a vidracsalád tárolódik, lásd lent. A felhasználók és a szerepek a
+  Supabase-ben vannak (lásd „Belépés és backend (#9)”); a feladatfájl nem kerül fel a szerverre.
 - **Feladatválasztó:** lenyitható fa az XML-hierarchia szerint, hierarchikus számozással (pl. `1.15.2`),
   keresőmezővel, amely címre és számra is szűr.
 - **Gépelési mód:** csak Copy (fent a minta, lent a beviteli mező). A `RecommendedTypingMode` és a `CanEdit` értékét figyelmen kívül hagyjuk; a backspace mindenhol működik.
@@ -105,6 +107,46 @@ Asztali gépre készül, de keskeny ablakban se törjön szét.
 - **Tárolás:** localStorage, `typeUp.v1` kulcs, `{ gold, items: { id: szint } }`, egyetlen közös pénztárca.
   A felhasználónkénti szétválasztás a #8 (Felhasználókezelés) feladata.
 - **Nullázás:** a családnézet alján kétlépéses gomb; a megerősítés kiírja, hogy az aranyakat és a vidracsaládot is törli.
+
+## Belépés és backend (#9)
+
+- **Backend:** Supabase (Auth + Postgres + RLS + SQL-függvények), projekt: `typeUp`, ref `ogkkptrpnsdduvhituav`,
+  régió `eu-central-1`, Free csomag. Az adatbázis-szkript: `docs/supabase-auth.sql`. Saját szerver és build nincs.
+- **Kliens:** `supabase-js` 2.117.2 UMD jsDelivrről, SRI-hash-sel. A Project URL és a publishable key az
+  `index.html`-ben áll, mindkettő nyilvános.
+- **Belépés:** csak Google OAuth (PKCE). A frissítő token nem jár le, a session addig él, amíg a felhasználó ki nem
+  jelentkezik. A kijelentkezés csak az adott eszközt jelentkezteti ki (`scope: 'local'`).
+  Az e-mailes egyszeri kód (Mailgun, levélkeret, Turnstile) külön issue-ban készül; addig az e-mailes belépés a
+  Supabase-ben ki van kapcsolva, mert CAPTCHA és saját levélküldő nélkül bárki kódot küldethetne bármely címre.
+- **Beengedés:** az első belépés után profil csak a tanártól kapott osztálykóddal jön létre (`join_class`). A kódot a
+  szerver ellenőrzi, csak a bcrypt-hash-e van meg, a tanár a felületen lecserélheti. Felhasználónként 10 hibás próba után
+  a csatlakozás letiltódik (`join_attempts`; feloldás: a sor törlése SQL-lel).
+- **Név:** a szerver normalizálja (NFC, szóközök összevonása) és kisbetűsíti (`name_key`, egyedi), így kis- és
+  nagybetűre érzéketlenül egyedi, és a kliens nem kerülheti meg.
+- **Szerepek:** mindenki diákként csatlakozik. Az első tanárt SQL-lel kell kinevezni:
+  `update public.profiles set role = 'teacher' where id = (select id from auth.users where email = '…');`
+  Utána a tanárok a Tanári felületen léptetnek elő és fokoznak vissza (saját magukat nem), és törölhetnek profilt.
+  A profil törlése az `auth.users` sort nem törli; a törölt felhasználó az osztálykóddal újra csatlakozhat.
+- **Biztonsági modell:** a nyilvános kulcs önmagában semmit nem enged. A táblákon RLS van, és az `anon`/`authenticated`
+  szerepek alapértelmezett táblajogait visszavontuk: bejelentkezve csak a saját profil olvasható (a tanárnak mindenkié),
+  törölni csak tanár tud, közvetlen insert/update nincs. Minden írás `security definer` függvényen át megy, amely maga
+  ellenőrzi a jogot (`is_teacher()`).
+- **Levélkeret (előkészítve az e-mailes belépéshez):** `email_log` tábla és `claim_email_slot` (csak `service_role`).
+  A keret módosítása: `update public.settings set email_hour_limit = 60, email_month_limit = 500;`
+- **Állapotgép (`route()`):** session nélkül `view-login`, profil nélkül `view-join`, profillal az alkalmazás. Az első
+  döntésig `view-boot` látszik, a profil lekérésének hibájánál „Nincs kapcsolat.” és [Újra]. Ha gépelés közben jön
+  kijelentkezés (pl. egy másik fülön), a váltás a következő nézetváltásig vár (`pendingRoute`).
+- **Titkok:** a `secrets.env` a repó gyökerében van, `.gitignore`-ban, `chmod 600`. Tartalma: Supabase
+  hozzáférési token és adatbázis-jelszó, a Google OAuth kliens adatai, a kezdő osztálykód. A repóba soha nem kerül.
+  A Management API-token a #8 lezárásakor visszavonandó (https://supabase.com/dashboard/account/tokens).
+- **Google Cloud:** projekt `typeUp`, az OAuth consent screen „In production”, a honlap `https://eszpee.github.io/typeUp/`,
+  az adatvédelmi oldal `adatvedelem.html`. Engedélyezett domainek: `ogkkptrpnsdduvhituav.supabase.co`, `eszpee.github.io`.
+- **Szüneteltetés ellen:** a Free projektet a Supabase 7 nap tétlenség után szünetelteti. A `.github/workflows/keepalive.yml`
+  hetente meghívja a `ping()` függvényt. A GitHub 60 nap repótétlenség után kikapcsolja az ütemezett workflow-t: ilyenkor
+  az Actions fülön újra kell engedélyezni. Ha a projekt mégis szünetel: Supabase-dashboard → a projekt → Restore.
+- **Helyi fejlesztés:** `python3 -m http.server 8000` a repó gyökeréből, utána `http://localhost:8000/`. A `file://` az
+  OAuth miatt nem használható. Automatizált teszthez a tesztfelhasználó sessionje az admin API-val készül
+  (`generate_link` → `hashed_token`, majd a böngészőben `sb.auth.verifyOtp({ token_hash, type: 'magiclink' })`).
 
 ## Ellenőrzés (Chrome DevTools MCP)
 

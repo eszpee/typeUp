@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>typeUp – gépelésgyakorló</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='22 8 76 70'%3E%3Ccircle cx='32' cy='24' r='8' fill='%238b5e3c'/%3E%3Ccircle cx='32' cy='24' r='4' fill='%235c3d27'/%3E%3Ccircle cx='88' cy='24' r='8' fill='%238b5e3c'/%3E%3Ccircle cx='88' cy='24' r='4' fill='%235c3d27'/%3E%3Cellipse cx='60' cy='44' rx='34' ry='28' fill='%238b5e3c'/%3E%3Cellipse cx='60' cy='56' rx='21' ry='14' fill='%23ecd9bf'/%3E%3Ccircle cx='45' cy='40' r='5' fill='%232b1d14'/%3E%3Ccircle cx='75' cy='40' r='5' fill='%232b1d14'/%3E%3Cellipse cx='60' cy='50' rx='7' ry='4.5' fill='%232b1d14'/%3E%3Cpath d='M53 57 Q56.5 61 60 57 Q63.5 61 67 57' stroke='%232b1d14' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3Cg stroke='%235c3d27' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M40 54 l-15 -3'/%3E%3Cpath d='M40 58 l-15 2'/%3E%3Cpath d='M80 54 l15 -3'/%3E%3Cpath d='M80 58 l15 2'/%3E%3C/g%3E%3C/svg%3E">
 <style>
   :root {
@@ -20,6 +21,7 @@
     --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html, body { margin: 0; }
   body {
     background: var(--bg);
@@ -250,6 +252,49 @@
   #reset-confirm p { margin: 0 0 12px; }
   button.danger { background: var(--error); border-color: var(--error); color: #fff; }
 
+  /* Belépés, csatlakozás */
+  #view-boot, #view-login, #view-join { text-align: center; padding-top: 8vh; }
+  #view-boot .otter-slot, #view-login .otter-slot, #view-join .otter-slot { width: 130px; margin: 0 auto 8px; }
+  .auth-card { max-width: 420px; margin: 24px auto 0; text-align: left; }
+  .auth-card p { margin: 0 0 16px; }
+  #google { display: block; width: 100%; padding: .75em 1em; font-weight: 550; }
+  .field { display: block; margin-bottom: 14px; }
+  .field span { display: block; font-size: .9rem; margin-bottom: 4px; }
+  .field input, .code-row input {
+    width: 100%; font: inherit; padding: .6em .9em;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text);
+  }
+  .form-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  #view-boot .error-msg { margin-bottom: 12px; }
+  .user-chip { white-space: nowrap; }
+  .user-chip .link-btn { padding: 0 .2em; font-size: inherit; }
+  .badge { display: inline-block; background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 0 .6em; font-size: .75rem; font-weight: 600; vertical-align: .05em; }
+
+  /* Tanári felület */
+  .t-section { margin-bottom: 20px; }
+  .t-section h2 { margin-bottom: 8px; }
+  .t-section p { margin: 0 0 12px; }
+  .code-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .code-row input { flex: 1; min-width: 180px; width: auto; }
+  .t-msg { margin-top: 10px; min-height: 1.5em; }
+  .t-msg.ok { color: var(--accent); }
+  .t-msg.bad { color: var(--error); }
+  .table-wrap { overflow-x: auto; }
+  .users-table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+  .users-table th, .users-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  .users-table th { font-size: .8rem; font-weight: 600; color: var(--muted); }
+  .users-table td.acts { white-space: nowrap; text-align: right; }
+  .users-table td.acts button { padding: .3em .7em; font-size: .85rem; }
+  .users-table tr.confirm td { background: var(--error-soft); white-space: normal; text-align: left; }
+  .users-table tr.confirm p { margin: 0 0 10px; }
+  .t-msg:empty, .auth-card .error-msg:empty { min-height: 0; margin: 0; }
+  .users-table td:nth-child(3) { white-space: nowrap; }
+  @media (max-width: 560px) {
+    .users-table th, .users-table td { padding: 8px 6px; }
+    .users-table td.acts { white-space: normal; }
+    .users-table td.acts button { display: block; width: 100%; margin: 3px 0; }
+  }
+
   @media (max-width: 560px) {
     .view { padding-top: 20px; }
     .card { padding: 16px; }
@@ -312,8 +357,43 @@
   </svg>
 </template>
 
+<!-- 0. Indulás, belépés, csatlakozás -->
+<section id="view-boot" class="view active">
+  <div class="otter-slot" data-otter="idle"></div>
+  <p id="boot-msg" class="muted">Betöltés…</p>
+  <div id="boot-error" hidden>
+    <div class="error-msg" role="alert">Nincs kapcsolat.</div>
+    <button id="boot-retry" type="button" class="primary">Újra</button>
+  </div>
+</section>
+
+<section id="view-login" class="view">
+  <div class="otter-slot" data-otter="wave"></div>
+  <h1>typeUp</h1>
+  <p class="lead muted">Gépelésgyakorló a Bexpész-feladatgyűjteményhez</p>
+  <div class="card auth-card">
+    <button id="google" type="button">Belépés Google-fiókkal</button>
+    <div id="login-error" class="error-msg" role="alert"></div>
+  </div>
+</section>
+
+<section id="view-join" class="view">
+  <div class="otter-slot" data-otter="wave"></div>
+  <h1>Csatlakozás</h1>
+  <form id="join-form" class="card auth-card" novalidate>
+    <p>Szia! Még egy lépés: add meg a neved és a tanárodtól kapott osztálykódot.</p>
+    <label class="field"><span>Név</span><input id="join-name" maxlength="30" autocomplete="name" required></label>
+    <label class="field"><span>Osztálykód</span><input id="join-code" autocomplete="off" autocapitalize="off" spellcheck="false" required></label>
+    <div class="form-actions">
+      <button id="join-submit" type="submit" class="primary">Csatlakozás</button>
+      <button type="button" class="link-btn" data-logout>Kijelentkezés</button>
+    </div>
+    <div id="join-error" class="error-msg" role="alert"></div>
+  </form>
+</section>
+
 <!-- 1. Betöltés -->
-<section id="view-load" class="view active">
+<section id="view-load" class="view">
   <div class="otter-slot" data-otter="wave"></div>
   <h1>typeUp</h1>
   <p class="lead muted">Gépelésgyakorló a Bexpész-feladatgyűjteményhez</p>
@@ -326,6 +406,7 @@
     <div id="load-error" class="error-msg" role="alert"></div>
   </div>
   <button type="button" class="family-btn" data-family>Vidracsalád · <span class="coin"></span> <span class="gold-count">0</span></button>
+  <button type="button" class="family-btn" data-teacher hidden>Tanári felület</button>
 </section>
 
 <!-- 2. Feladatválasztó -->
@@ -336,6 +417,7 @@
       <div id="file-name" class="file-name muted"></div>
     </div>
     <button type="button" class="family-btn" data-family>Vidracsalád · <span class="coin"></span> <span class="gold-count">0</span></button>
+    <button type="button" data-teacher hidden>Tanári felület</button>
     <button id="other-file" type="button">Másik fájl</button>
   </div>
   <input id="search" type="search" placeholder="Keresés címre vagy számra (pl. vessző, 1.15)" autocomplete="off">
@@ -410,7 +492,34 @@
   </div>
 </section>
 
-<footer id="version" class="version muted">v17</footer>
+<!-- 6. Tanári felület -->
+<section id="view-teacher" class="view">
+  <div class="list-head">
+    <button id="teacher-back" type="button">← Vissza</button>
+    <h1 class="grow">Tanári felület</h1>
+    <button id="teacher-refresh" type="button">Frissítés</button>
+  </div>
+  <div class="card t-section">
+    <h2>Osztálykód</h2>
+    <p class="muted">A diákok ezzel a kóddal csatlakoznak. A régi kód nem olvasható vissza; ha kiszivárgott, adj meg egy újat.</p>
+    <form id="code-form" class="code-row" novalidate>
+      <input id="code-new" placeholder="Új osztálykód" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Új osztálykód">
+      <button type="submit" class="primary">Mentés</button>
+    </form>
+    <div id="code-msg" class="t-msg" role="status"></div>
+  </div>
+  <div class="card t-section">
+    <h2>Felhasználók</h2>
+    <div id="users-status" class="muted"></div>
+    <div id="users-msg" class="t-msg bad" role="alert"></div>
+    <div class="table-wrap"><table class="users-table" id="users-table" hidden>
+      <thead><tr><th>Név</th><th>Szerep</th><th>Csatlakozott</th><th></th></tr></thead>
+      <tbody id="users-body"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<footer class="version muted"><span id="version">v18</span> <span id="user-chip" class="user-chip" hidden>· <span id="user-name"></span> <span id="user-badge" class="badge" hidden>tanár</span> · <button type="button" class="link-btn" data-logout>Kijelentkezés</button></span></footer>
 
 <script>
 'use strict';
@@ -473,10 +582,18 @@ function parseCollection(xmlText) {
 
 // ---------- Nézetek ----------
 
+let pendingRoute = false;   // gépelés közben érkezett kijelentkezés, lásd route()
+
 function showView(name) {
+  // A halasztott kijelentkezés a következő nézetváltáskor (pl. a feladat végén) érvényesül.
+  if (pendingRoute && name !== 'type') {
+    pendingRoute = false;
+    if (!me.user || !me.profile) { route(); return; }
+  }
   document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${name}`));
   if (name !== 'type') stopTimer();
 }
+const activeView = () => document.querySelector('.view.active').id.replace('view-', '');
 
 // ---------- Vidra ----------
 
@@ -1311,7 +1428,7 @@ function buy(id) {
 
 let familyFrom = 'load';
 function openFamily() {
-  familyFrom = document.querySelector('.view.active').id.replace('view-', '');
+  familyFrom = activeView();
   showResetConfirm(false);
   renderFamily();
   showView('family');
@@ -1347,6 +1464,258 @@ window.addEventListener('storage', (e) => {
   if ($('view-family').classList.contains('active')) renderFamily(); else showGold(false);
 });
 showGold(false);
+
+// ---------- Belépés és backend (Supabase) ----------
+
+// Nyilvános értékek. A publishable key önmagában semmit nem enged: minden jogot az RLS-szabályok
+// és az SQL-függvények adnak, a bejelentkezett felhasználóhoz (auth.uid()) kötve. Lásd docs/supabase-auth.sql.
+const SB_URL = 'https://ogkkptrpnsdduvhituav.supabase.co';
+const SB_KEY = 'sb_publishable_P8qpqTp1Wu5QGjFFUEW3Og_7rIsrVd7';
+const sb = SB_URL && window.supabase
+  ? supabase.createClient(SB_URL, SB_KEY, { auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } })
+  : null;
+
+const me = { user: null, profile: null };   // profile: a profiles tábla sora
+const isTeacher = () => !!me.profile && me.profile.role === 'teacher';
+const APP_VIEWS = new Set(['load', 'list', 'type', 'result', 'family', 'teacher']);
+
+// Az OAuth-visszatérés hibája (pl. a felhasználó megszakította) az URL-ben jön.
+const oauthError = new URLSearchParams(location.search + '&' + location.hash.slice(1)).get('error');
+
+/**
+ * A nézet kiválasztása a belépési állapotból: session nélkül a belépő, profil nélkül a csatlakozó nézet,
+ * profillal az alkalmazás. Gépelés közben nem vált, csak a következő nézetváltáskor (pendingRoute).
+ */
+function route() {
+  renderUserChip();
+  const target = !me.user ? 'login' : !me.profile ? 'join' : null;
+  const cur = activeView();
+  if (target) {
+    if (cur === 'type' && st && !st.endTime) { pendingRoute = true; return; }
+    pendingRoute = false;
+    if (target === 'join') prepareJoin();
+    showView(target);
+    return;
+  }
+  pendingRoute = false;
+  if (cur === 'teacher' && !isTeacher()) showView(teacherFrom);
+  else if (!APP_VIEWS.has(cur)) showView(collection && !collection.sample ? 'list' : 'load');
+}
+
+function renderUserChip() {
+  $('user-chip').hidden = !me.profile;
+  $('user-name').textContent = me.profile ? me.profile.name : '';
+  $('user-badge').hidden = !isTeacher();
+  document.querySelectorAll('[data-teacher]').forEach((b) => { b.hidden = !isTeacher(); });
+}
+
+async function fetchProfile(userId) {
+  const { data, error } = await sb.from('profiles').select('*').eq('id', userId).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+let authSeq = 0;
+async function onAuth(session) {
+  const seq = ++authSeq;
+  const user = session ? session.user : null;
+  if (!user) { me.user = null; me.profile = null; route(); return; }
+  // Tokenfrissítés ugyanannál a felhasználónál: a profil nem változott.
+  if (me.user && me.user.id === user.id && me.profile) { me.user = user; return; }
+  me.user = user;
+  let profile;
+  try { profile = await fetchProfile(user.id); } catch { if (seq === authSeq) showBootError(); return; }
+  if (seq !== authSeq) return;
+  me.profile = profile;
+  route();
+}
+
+function showBootError() {
+  $('boot-msg').hidden = true;
+  $('boot-error').hidden = false;
+  showView('boot');
+}
+$('boot-retry').addEventListener('click', async () => {
+  $('boot-error').hidden = true;
+  $('boot-msg').hidden = false;
+  me.user = null;
+  const { data } = await sb.auth.getSession();
+  onAuth(data.session);
+});
+
+// ----- Belépés -----
+
+$('google').addEventListener('click', async () => {
+  $('login-error').textContent = '';
+  $('google').disabled = true;
+  const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname } });
+  if (error) {
+    $('google').disabled = false;
+    $('login-error').textContent = 'A belépés nem sikerült, próbáld újra.';
+  }
+});
+// A Google-oldalról a Vissza gombbal visszatérve a gomb újra használható legyen.
+window.addEventListener('pageshow', () => { if (sb) $('google').disabled = false; });
+
+// ----- Csatlakozás -----
+
+let joinPrefilledFor = null;
+function prepareJoin() {
+  $('join-error').textContent = '';
+  if (joinPrefilledFor === me.user.id) return;
+  joinPrefilledFor = me.user.id;
+  const meta = me.user.user_metadata || {};
+  $('join-name').value = (meta.full_name || meta.name || '').slice(0, 30);
+  $('join-code').value = '';
+}
+
+const JOIN_ERRORS = {
+  TU003: 'Túl sok hibás próbálkozás. Kérd meg a tanárodat, hogy segítsen.',
+  TU005: 'Adj meg egy nevet (legfeljebb 30 karakter).',
+  23505: 'Ez a név már foglalt, válassz másikat.',
+};
+$('join-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const err = $('join-error');
+  const name = $('join-name').value;
+  const code = $('join-code').value.trim();
+  if (!name.trim()) { err.textContent = JOIN_ERRORS.TU005; $('join-name').focus(); return; }
+  if (!code) { err.textContent = 'Add meg az osztálykódot.'; $('join-code').focus(); return; }
+  err.textContent = '';
+  $('join-submit').disabled = true;
+  // A nevet a szerver normalizálja (szóközök, kis- és nagybetű), az egyediséget is ő ellenőrzi.
+  const { data, error } = await sb.rpc('join_class', { p_code: code, p_name: name });
+  $('join-submit').disabled = false;
+  if (error) {
+    if (error.code === 'TU002') {   // már van profilja (pl. egy másik fülön csatlakozott)
+      try { me.profile = await fetchProfile(me.user.id); route(); } catch { err.textContent = 'Nincs kapcsolat.'; }
+      return;
+    }
+    err.textContent = JOIN_ERRORS[error.code] || 'Nem sikerült csatlakozni. Ellenőrizd a kapcsolatot, és próbáld újra.';
+    return;
+  }
+  if (!data || !data.id) { err.textContent = 'Hibás osztálykód.'; $('join-code').select(); return; }
+  me.profile = data;
+  route();
+});
+
+// ----- Kijelentkezés -----
+
+async function beforeSignOut() { /* a #8 ide köti be a kimenő eredmények ürítését */ }
+
+document.querySelectorAll('[data-logout]').forEach((b) => b.addEventListener('click', async () => {
+  // A saját kérésre történő kijelentkezés gépelés közben is azonnal érvényes.
+  if (st && !st.endTime) { st.endTime = performance.now(); stopTimer(); }
+  await beforeSignOut();
+  await sb.auth.signOut({ scope: 'local' });   // csak ezen az eszközön; a SIGNED_OUT a belépő nézetre visz
+}));
+
+// ----- Tanári felület -----
+
+let teacherFrom = 'load';
+let users = [];
+let confirmDeleteId = null;
+
+function openTeacher() {
+  teacherFrom = activeView();
+  $('code-new').value = '';
+  setCodeMsg('', true);
+  showView('teacher');
+  window.scrollTo(0, 0);
+  loadUsers();
+}
+document.querySelectorAll('[data-teacher]').forEach((b) => b.addEventListener('click', openTeacher));
+$('teacher-back').addEventListener('click', () => showView(teacherFrom));
+$('teacher-refresh').addEventListener('click', loadUsers);
+
+function setCodeMsg(text, ok) {
+  $('code-msg').textContent = text;
+  $('code-msg').className = `t-msg ${ok ? 'ok' : 'bad'}`;
+}
+$('code-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const code = $('code-new').value.trim();
+  if (code.length < 8) { setCodeMsg('Legalább 8 karakter.', false); return; }
+  const { error } = await sb.rpc('set_class_code', { p_code: code });
+  if (error) { setCodeMsg(error.code === 'TU006' ? 'Legalább 8 karakter.' : 'Nem sikerült menteni.', false); return; }
+  $('code-new').value = '';
+  setCodeMsg('Az új kód él, a régi már nem működik.', true);
+});
+
+async function loadUsers() {
+  $('users-msg').textContent = '';
+  $('users-status').textContent = 'Betöltés…';
+  const { data, error } = await sb.from('profiles').select('id,name,role,created_at').order('name_key');
+  if (error) {
+    $('users-table').hidden = true;
+    $('users-status').innerHTML = 'Nem sikerült betölteni a felhasználókat. <button type="button" id="users-retry">Újra</button>';
+    $('users-retry').addEventListener('click', loadUsers);
+    return;
+  }
+  users = data;
+  confirmDeleteId = null;
+  $('users-status').textContent = `${users.length} felhasználó`;
+  renderUsers();
+}
+
+function renderUsers() {
+  $('users-table').hidden = !users.length;
+  $('users-body').innerHTML = users.map((u) => {
+    const self = u.id === me.profile.id;
+    const teacher = u.role === 'teacher';
+    const acts = self ? '' : `<button type="button" data-role="${teacher ? 'student' : 'teacher'}" data-id="${esc(u.id)}">${teacher ? 'Diákká teszem' : 'Tanárrá teszem'}</button> `
+      + `<button type="button" data-del="${esc(u.id)}">Törlés</button>`;
+    let row = `<tr><td>${esc(u.name)}${self ? ' <span class="muted">(te)</span>' : ''}</td><td>${teacher ? 'tanár' : 'diák'}</td>`
+      + `<td>${new Date(u.created_at).toLocaleDateString('hu-HU')}</td><td class="acts">${acts}</td></tr>`;
+    if (u.id === confirmDeleteId) {
+      row += `<tr class="confirm"><td colspan="4"><p>Biztosan törlöd ezt a felhasználót: <b>${esc(u.name)}</b>? Az aranyai, a vidracsaládja és (a #8 után) az eredményei is törlődnek.</p>`
+        + `<button type="button" class="danger" data-del-yes="${esc(u.id)}">Igen, törlöm</button> <button type="button" data-del-no>Mégse</button></td></tr>`;
+    }
+    return row;
+  }).join('');
+}
+
+$('users-body').addEventListener('click', async (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.dataset.del) {
+    confirmDeleteId = b.dataset.del;
+    renderUsers();
+    $('users-body').querySelector('[data-del-no]').focus();
+    return;
+  }
+  if (b.hasAttribute('data-del-no')) { confirmDeleteId = null; renderUsers(); return; }
+  $('users-body').querySelectorAll('button').forEach((x) => { x.disabled = true; });
+  let error;
+  if (b.dataset.role) {
+    ({ error } = await sb.rpc('set_role', { p_user: b.dataset.id, p_role: b.dataset.role }));
+  } else if (b.dataset.delYes) {
+    let count;
+    ({ error, count } = await sb.from('profiles').delete({ count: 'exact' }).eq('id', b.dataset.delYes));
+    if (!error && !count) error = { message: 'nincs törölt sor' };
+  }
+  await loadUsers();
+  if (error) $('users-msg').textContent = 'A művelet nem sikerült. Frissítsd a listát, és próbáld újra.';
+});
+
+// ----- Indulás -----
+
+function cleanAuthUrl() {
+  if (location.search || location.hash) history.replaceState(null, '', location.pathname);
+}
+
+if (sb) {
+  if (oauthError) $('login-error').textContent = 'A Google-belépés nem sikerült, próbáld újra.';
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'INITIAL_SESSION') cleanAuthUrl();
+    // A callbackben nem hívunk közvetlenül Supabase-függvényt (a supabase-js holtpontra futhat).
+    setTimeout(() => onAuth(session));
+  });
+} else {
+  $('google').disabled = true;
+  $('login-error').textContent = 'A belépés most nem elérhető.';
+  showView('login');
+}
 </script>
 </body>
 </html>
