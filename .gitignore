@@ -1,1 +1,3 @@
 .DS_Store
+# Titkok (#9): soha nem kerülhet a repóba
+secrets.env
